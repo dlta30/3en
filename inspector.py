@@ -14,7 +14,7 @@ from pathlib import Path
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 
-APP_NAME = "3EN | INSPECTOR"
+APP_NAME = "3EN FIGHT INSPECTOR | by: ROITH"
 REPORT_DIR = Path.home() / "Documents" / "3EN_FIGHT_Reports"
 SUSPICIOUS_TERMS = (
     "aimbot", "wallhack", "esp", "injector", "memory editor", "cheat engine",
@@ -308,8 +308,8 @@ class Inspector:
         self.root = root
         self.results = []
         root.title(APP_NAME)
-        root.geometry("1180x820")
-        root.minsize(900, 680)
+        root.geometry("1280x900")
+        root.minsize(1000, 740)
         root.configure(bg="#08090d")
         style = ttk.Style()
         try:
@@ -320,11 +320,17 @@ class Inspector:
         style.configure("Treeview", background="#11141c", fieldbackground="#11141c", foreground="#e5e7eb", rowheight=28, borderwidth=0)
         style.configure("Treeview.Heading", background="#1b202b", foreground="#f3f4f6", font=("Segoe UI", 9, "bold"))
         style.map("Treeview", background=[("selected", "#59202b")])
-        header = tk.Frame(root, bg="#0d0f15", highlightbackground="#51212b", highlightthickness=1)
+        header = tk.Frame(root, bg="#0d0f15", highlightbackground="#ff2948", highlightthickness=1)
         header.pack(fill="x", padx=18, pady=(18, 10))
-        tk.Label(header, text="3EN", font=("Segoe UI", 28, "bold"), fg="#ff334b", bg="#0d0f15").pack(anchor="w", padx=20, pady=(14, 0))
-        tk.Label(header, text="by: ROITH", font=("Segoe UI", 10, "bold"), fg="#a6aab5", bg="#0d0f15").pack(anchor="w", padx=22, pady=(0, 10))
-        tk.Label(header, text="INSPECTOR  /  WINDOWS SECURITY & GAME-INTEGRITY REVIEW", fg="#c1c6d4", bg="#0d0f15", font=("Segoe UI", 9, "bold")).pack(anchor="w", padx=22, pady=(0, 14))
+        brand_row = tk.Frame(header, bg="#0d0f15")
+        brand_row.pack(fill="x", padx=20, pady=(14, 0))
+        brand_left = tk.Frame(brand_row, bg="#0d0f15")
+        brand_left.pack(side="left", anchor="w")
+        tk.Label(brand_left, text="3EN", font=("Segoe UI", 32, "bold"), fg="#ff2948", bg="#0d0f15").pack(side="left")
+        tk.Label(brand_left, text=" FIGHT", font=("Segoe UI", 17, "bold"), fg="#f7f3f5", bg="#0d0f15").pack(side="left", pady=(9, 0))
+        tk.Label(brand_row, text="INSPECTION OPERATIONS CENTER  ●  ONLINE", font=("Segoe UI", 9, "bold"), fg="#ff8193", bg="#251019", padx=12, pady=8).pack(side="right", anchor="center")
+        tk.Label(header, text="by: ROITH  ·  INSPECTOR TEAM", font=("Segoe UI", 10, "bold"), fg="#a6aab5", bg="#0d0f15").pack(anchor="w", padx=22, pady=(2, 4))
+        tk.Label(header, text="WINDOWS SECURITY & GAME-INTEGRITY REVIEW", fg="#c1c6d4", bg="#0d0f15", font=("Segoe UI", 9, "bold")).pack(anchor="w", padx=22, pady=(0, 14))
         tk.Label(root, text="فحص محلي بموافقتك. لا يحذف ملفات ولا يوقف عمليات ولا يرفع محتوى ملفاتك. مؤشرات الغش احتمالية وقد تنتج عنها نتائج إيجابية كاذبة.", wraplength=980, justify="left", fg="#cbd0dc", bg="#08090d").pack(anchor="w", padx=24, pady=(0, 10))
         form = tk.Frame(root, bg="#11141c", highlightbackground="#34303a", highlightthickness=1)
         form.pack(fill="x", padx=18, pady=5)
@@ -357,7 +363,7 @@ class Inspector:
         self.saved_label = self.stat_card(stats, "حالة التقرير", "لم يبدأ")
         panel = tk.Frame(root, bg="#11141c", highlightbackground="#34303a", highlightthickness=1)
         panel.pack(fill="both", expand=True, padx=18, pady=(2, 18))
-        tk.Label(panel, text="نتائج الفحص", fg="#f3f4f6", bg="#11141c", font=("Segoe UI", 12, "bold")).pack(anchor="w", padx=12, pady=(10, 6))
+        tk.Label(panel, text="نتائج الفحص  /  INSPECTION RESULTS", fg="#f3f4f6", bg="#11141c", font=("Segoe UI", 12, "bold")).pack(anchor="w", padx=12, pady=(10, 6))
         filterbar = tk.Frame(panel, bg="#11141c")
         filterbar.pack(fill="x", padx=12, pady=(0, 8))
         tk.Label(filterbar, text="بحث:", fg="#aab2c2", bg="#11141c").pack(side="left", padx=(0, 6))
