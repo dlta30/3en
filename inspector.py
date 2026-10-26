@@ -23,6 +23,22 @@ def check_defender():
     except Exception:
         return [{"check":"Defender","item":"Status unavailable","detail":"Please verify in Windows Security","severity":"info"}]
 
+def run_defender_quick_scan():
+    """Ask Microsoft Defender to run its own quick scan; never disables protection."""
+    if os.name != "nt":
+        return [{"check":"Microsoft Defender scan","item":"Unavailable","detail":"Windows-only feature","severity":"info"}]
+    try:
+        cmd = ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", "Start-MpScan -ScanType QuickScan"]
+        p = subprocess.run(cmd, capture_output=True, text=True, timeout=900, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+        if p.returncode == 0:
+            return [{"check":"Microsoft Defender scan","item":"Quick scan requested","detail":"Check Windows Security for the authoritative scan result.","severity":"info"}]
+        detail = (p.stderr or p.stdout or "Defender did not accept the scan request").strip()[:240]
+        return [{"check":"Microsoft Defender scan","item":"Quick scan unavailable","detail":detail,"severity":"review"}]
+    except subprocess.TimeoutExpired:
+        return [{"check":"Microsoft Defender scan","item":"Timed out","detail":"Check Windows Security for scan status.","severity":"review"}]
+    except Exception as exc:
+        return [{"check":"Microsoft Defender scan","item":"Could not start","detail":str(exc)[:200],"severity":"review"}]
+
 def check_startup():
     results, roots = [], []
     for env in ("APPDATA","PROGRAMDATA"):
@@ -66,7 +82,7 @@ def check_processes():
     except Exception: return []
 
 def perform_scan(progress):
-    checks = [("حالة Windows Defender",check_defender),("مجلد بدء التشغيل",check_startup),
+    checks = [("حالة Windows Defender",check_defender),("فحص Microsoft Defender السريع",run_defender_quick_scan),("مجلد بدء التشغيل",check_startup),
               ("الملفات الحديثة المؤقتة",check_temp),("العمليات الجارية",check_processes)]
     random.SystemRandom().shuffle(checks)
     results = []
