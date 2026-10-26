@@ -5,3 +5,37 @@ a{color:#ff8193;text-decoration:none;transition:color .2s,background .2s}a:hover
 
 /* Windows EXE download panel */
 .app-download-card{display:flex;align-items:center;gap:16px;padding:18px;margin:18px 0 12px;border:1px solid #612331;border-radius:13px;background:linear-gradient(110deg,#201017,#101015 70%);box-shadow:inset 0 1px #ffffff08}.app-download-icon{flex:0 0 54px;height:54px;display:grid;place-items:center;border-radius:15px;background:linear-gradient(145deg,#ff2948,#750b20);font-size:29px;font-weight:1000;color:#fff;box-shadow:0 0 25px #ff294826}.app-download-copy{display:grid;gap:6px;flex:1;min-width:0}.app-download-copy strong{font-size:15px;color:#fff}.app-download-card .button{white-space:nowrap}.build-note{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 14px;border:1px solid #30252d;border-radius:9px;background:#ffffff03;font-size:12px}.build-note strong{color:#ff8b9b}@media(max-width:650px){.app-download-card{align-items:flex-start;flex-wrap:wrap}.app-download-copy{flex-basis:calc(100% - 75px)}.app-download-card .button{width:100%}.build-note{align-items:flex-start;flex-direction:column}}
+
+/* 3EN FIGHT owner-console redesign */
+.owner-console{background:radial-gradient(ellipse at 90% 0%,#5a0b1b44,transparent 34%),radial-gradient(ellipse at 10% 80%,#25081144,transparent 38%),#08090d}
+.owner-console .topbar{padding:12px 24px 12px 28px;border-bottom-color:#3b1721}
+.owner-console .brand{font-size:17px;line-height:1.05}
+.owner-console .brand>span:last-child>span{color:#ff2948}
+.owner-console .brand small{display:block;margin-top:5px;font-size:8px;letter-spacing:2px;color:#a69aa2}
+.owner-console .container{width:auto;max-width:none;margin:0;padding:26px 28px 34px 28px}
+.owner-console .hero{border-radius:13px;border-color:#65202e;background:linear-gradient(115deg,#1c0b11,#0e0f14 70%,#180810);padding:30px 34px;min-height:210px}
+.owner-console .hero-stamp{border-radius:12px;transform:none;width:145px;height:130px;flex-basis:145px}
+.owner-console .stats{gap:12px;margin:15px 0}
+.owner-console .panel{border-radius:11px;border-color:#2b252d;background:linear-gradient(145deg,#121319,#0c0d11);box-shadow:0 12px 30px #0003,inset 0 1px #ffffff05}
+.owner-console .stat-card{border-top:2px solid #9e172f}
+.owner-console .section-panel{margin-top:16px}
+.owner-console .section-head h2{font-size:18px}
+.owner-console .app-download-card{border-color:#65202e;background:linear-gradient(100deg,#260d15,#111117 75%)}
+.owner-console .button{box-shadow:0 5px 20px #ff29481a}
+.owner-console .console-main{min-width:0}
+.side-nav{position:fixed;right:0;top:65px;bottom:0;width:226px;padding:22px 14px;background:linear-gradient(180deg,#0d0e13,#090a0e);border-left:1px solid #2b1c24;z-index:5;display:flex;flex-direction:column;gap:8px}
+.side-profile{display:flex;align-items:center;gap:11px;padding:5px 8px 22px;margin-bottom:10px;border-bottom:1px solid #ffffff10}
+.profile-emblem{width:39px;height:39px;border:1px solid #e32948;border-radius:12px;display:grid;place-items:center;background:linear-gradient(145deg,#e31d3d,#5b0b1c);font-size:23px;font-weight:1000;box-shadow:0 0 22px #ff29481c}
+.side-profile strong,.side-profile small{display:block}.side-profile strong{font-size:12px}.side-profile small{font-size:9px;color:#a99ca4;margin-top:5px;letter-spacing:1px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:12px 11px;border:1px solid transparent;border-radius:8px;color:#b9b0b8;font-size:12px}
+.nav-item span{width:18px;text-align:center;color:#ff526b;font-size:17px}
+.nav-item:hover,.nav-item.active{background:linear-gradient(90deg,#741326,#2a0e17);border-color:#65202e;color:white}
+.side-footer{margin-top:auto;padding:15px 9px;border-top:1px solid #ffffff10;color:#e8dce1;font-size:11px;line-height:2}
+.side-footer .live-dot{margin-left:6px}.side-footer small{color:#827780;font-size:9px}
+.owner-console .console-main{margin-right:226px}
+.owner-console .hero h1{font-size:clamp(27px,3vw,40px)}
+.owner-console .stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+.owner-console .owner-archive{scroll-margin-top:85px}
+.owner-console .owner-app{scroll-margin-top:85px}
+@media(max-width:900px){.side-nav{width:180px}.owner-console .console-main{margin-right:180px}.owner-console .container{padding:20px 16px}.side-nav{padding:18px 10px}.owner-console .stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){.side-nav{position:static;width:auto;display:flex;flex-direction:row;flex-wrap:wrap;padding:8px;border-left:0;border-bottom:1px solid #2b1c24}.side-profile,.side-footer{display:none}.nav-item{flex:1 1 auto;justify-content:center;padding:9px 7px;font-size:10px}.owner-console .console-main{margin-right:0}.owner-console .container{padding:14px 10px}.owner-console .stats{grid-template-columns:1fr}.owner-console .hero{padding:20px}.owner-console .topbar{padding:10px 12px}.owner-console .top-actions .status{display:none}}
