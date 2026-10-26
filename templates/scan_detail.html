@@ -1,58 +1,10 @@
-```html
 <!doctype html>
 <html lang="ar" dir="rtl">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>تفاصيل الفحص #{{ scan.id }}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-  <header class="topbar">
-    <a class="brand" href="/">3eN <span>FIGHT PRO</span></a>
-    <a href="/">رجوع للوحة التحكم</a>
-  </header>
-
-  <main class="container">
-    <p class="eyebrow">SCAN REPORT</p>
-    <h1>تقرير الفحص #{{ scan.id }}</h1>
-
-    <section class="stats">
-      <article class="panel"><p class="muted">اللاعب</p><strong>{{ scan.player }}</strong></article>
-      <article class="panel"><p class="muted">إجمالي الملفات</p><strong>{{ scan.total_files }}</strong></article>
-      <article class="panel"><p class="muted">مؤشرات للمراجعة</p><strong>{{ scan.flagged_files }}</strong></article>
-    </section>
-
-    <section class="panel">
-      <h2>الملفات</h2>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr><th>اسم الملف</th><th>المؤشرات</th></tr>
-          </thead>
-          <tbody>
-            {% for result in scan.results %}
-            <tr>
-              <td>{{ result.file }}</td>
-              <td>
-                {% if result.hits %}
-                  {{ result.hits | join(', ') }}
-                {% else %}
-                  <span class="muted">لا توجد مطابقة للاسم</span>
-                {% endif %}
-              </td>
-            </tr>
-            {% else %}
-            <tr><td colspan="2">لا توجد تفاصيل ملفات.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      <p class="muted small">
-        هذه النتائج مبنية على مؤشرات أسماء الملفات، وتحتاج إلى تحقق إضافي.
-      </p>
-    </section>
-  </main>
-</body>
-</html>
-```
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#08080c"><title>3en lnspector Team | تقرير #{{ scan.id }}</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body><header class="topbar"><a class="brand" href="/"><span class="brand-mark">3</span><span>3en <span>lnspector Team</span></span></a><a class="top-link" href="/">← لوحة التحكم</a></header>
+<main class="container"><p class="eyebrow">INSPECTION REPORT / #{{ scan.id }}</p><h1>تقرير <span>التفتيش #{{ scan.id }}</span></h1><p class="muted">تاريخ التقرير: {{ scan.created_at.strftime('%Y-%m-%d %H:%M') }} · اللاعب: {{ scan.player }}</p>
+<section class="stats"><article class="panel stat-card"><p class="stat-label">اللاعب</p><strong class="report-player">{{ scan.player }}</strong></article><article class="panel stat-card"><p class="stat-label">إجمالي الملفات</p><strong>{{ scan.total_files }}</strong></article><article class="panel stat-card"><p class="stat-label">مؤشرات للمراجعة</p><strong class="red">{{ scan.flagged_files }}</strong></article></section>
+<section class="panel section-panel"><div class="section-head"><div><p class="eyebrow">FILE REVIEW</p><h2>نتائج تحليل الملفات</h2></div><button type="button" id="exportDetail">تصدير التقرير ↓</button></div><div class="table-wrap"><table id="detailTable"><thead><tr><th>اسم الملف</th><th>المؤشرات المسجلة</th><th>الحالة</th></tr></thead><tbody>
+{% for result in scan.results %}<tr><td>{{ result.file }}</td><td>{% if result.hits %}{{ result.hits | join(', ') }}{% else %}<span class="muted">لا توجد مطابقة مسجلة</span>{% endif %}</td><td>{% if result.hits %}<span class="status warning">يحتاج مراجعة</span>{% else %}<span class="status">لا توجد مطابقة</span>{% endif %}</td></tr>{% else %}<tr><td colspan="3">لا توجد تفاصيل ملفات.</td></tr>{% endfor %}
+</tbody></table></div><p class="muted small footnote">⚠️ التقرير يعرض المؤشرات التي أرسلها عميل الفحص، ولا يؤكد وحده وجود مخالفة. راجع السياق ومصدر الملف ونتائج الأدوات الموثوقة.</p></section><footer>3en lnspector Team · INSPECTION REPORT</footer></main>
+<script>document.getElementById('exportDetail').addEventListener('click',()=>{const rows=[...document.querySelectorAll('#detailTable tr')];const csv=rows.map(r=>[...r.cells].map(c=>'"'+c.innerText.replace(/"/g,'""').trim()+'"').join(',')).join('\r\n');const url=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'}));const a=document.createElement('a');a.href=url;a.download='3en-inspector-report-{{ scan.id }}.csv';a.click();URL.revokeObjectURL(url);});</script></body></html>
