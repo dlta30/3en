@@ -1,6 +1,4 @@
-```text
 Flask
 gunicorn
 Flask-SQLAlchemy
 psycopg[binary]
-```
