@@ -9,15 +9,14 @@ import threading
 import urllib.error
 import urllib.request
 import tkinter as tk
-from tkinter import filedialog, messagebox, ttk, simpledialog
+from tkinter import filedialog, messagebox, ttk
 
 APP_NAME = "3eN Fight Scanner PRO"
 DEFAULT_ENDPOINT = "https://YOUR-RENDER-SERVICE.onrender.com"
 MAX_RESULTS = 5000
 MAX_FILES = 100000
 
-# These are review indicators, not proof of cheating. Update this list only
-# with indicators you have a reliable reason to investigate.
+# These are review indicators, not proof of cheating.
 INDICATORS = (
     "eulen", "menyo", "tiago", "falloutmenu", "cobra", "lux menu",
     "luxmenu", "dopamine", "lua executor", "injector", "extreme injector",
@@ -145,9 +144,6 @@ class ScannerApp:
         errors = 0
         for folder in list(self.folders):
             for current, dirs, files in os.walk(folder):
-                dirs[:] = [d for d in dirs if d.casefold() not in {
-                    "node_modules", ".git", "__pycache__", "cache"
-                }]
                 for filename in files:
                     if self.total_files >= MAX_FILES:
                         self.root.after(0, self.log, f"وصل الفحص إلى حد {MAX_FILES:,} ملف لحماية الأداء.")
@@ -155,19 +151,19 @@ class ScannerApp:
                     self.total_files += 1
                     path = os.path.join(current, filename)
                     hits = match_indicators(filename)
-                    if hits:
+                    if hits and len(self.results) < MAX_RESULTS:
                         try:
                             file_hash = sha256_file(path)
                             size = os.path.getsize(path)
                             hits = hits + [f"SHA-256: {file_hash}", f"الحجم بالبايت: {size}"]
                             relative = os.path.relpath(path, folder)
                             self.results.append({"file": relative[:255], "hits": hits})
-                        except (OSError, PermissionError):
+                        except OSError:
                             errors += 1
                     if self.total_files % 100 == 0:
                         self.root.after(0, self.status.set, f"تم فحص {self.total_files:,} ملف — {len(self.results)} ملف عليه مؤشر")
-            if self.total_files >= MAX_FILES:
-                break
+                if self.total_files >= MAX_FILES:
+                    break
 
         self.root.after(0, self.scan_finished, errors)
 
