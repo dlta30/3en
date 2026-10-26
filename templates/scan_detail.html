@@ -1,0 +1,58 @@
+```html
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>تفاصيل الفحص #{{ scan.id }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/">3eN <span>FIGHT PRO</span></a>
+    <a href="/">رجوع للوحة التحكم</a>
+  </header>
+
+  <main class="container">
+    <p class="eyebrow">SCAN REPORT</p>
+    <h1>تقرير الفحص #{{ scan.id }}</h1>
+
+    <section class="stats">
+      <article class="panel"><p class="muted">اللاعب</p><strong>{{ scan.player }}</strong></article>
+      <article class="panel"><p class="muted">إجمالي الملفات</p><strong>{{ scan.total_files }}</strong></article>
+      <article class="panel"><p class="muted">مؤشرات للمراجعة</p><strong>{{ scan.flagged_files }}</strong></article>
+    </section>
+
+    <section class="panel">
+      <h2>الملفات</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>اسم الملف</th><th>المؤشرات</th></tr>
+          </thead>
+          <tbody>
+            {% for result in scan.results %}
+            <tr>
+              <td>{{ result.file }}</td>
+              <td>
+                {% if result.hits %}
+                  {{ result.hits | join(', ') }}
+                {% else %}
+                  <span class="muted">لا توجد مطابقة للاسم</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="2">لا توجد تفاصيل ملفات.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p class="muted small">
+        هذه النتائج مبنية على مؤشرات أسماء الملفات، وتحتاج إلى تحقق إضافي.
+      </p>
+    </section>
+  </main>
+</body>
+</html>
+```
