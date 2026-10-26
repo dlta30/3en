@@ -15,8 +15,10 @@ Standalone Windows inspection utility with a black/red desktop interface.
 
 - This is a defensive review tool, not a guarantee that every cheat, malware family or hidden component will be detected.
 - A process name or keyword match is only a lead for manual review; it is not proof of cheating.
-- The tool does not terminate processes, delete files, disable security controls, hide itself, bypass anti-cheat, or automatically upload reports/file contents.
-- Reports are saved locally under Documents/3EN_FIGHT_Reports. Use Export JSON to copy a report elsewhere.
+- The tool does not terminate processes, delete files, disable security controls, hide itself, or bypass anti-cheat.
+- A separate explicit checkbox is required to consent to a full-screen screenshot being captured and sent with the report to the configured Discord webhook. Do not run this on another person's device without their informed permission.
+- Set `DISCORD_WEBHOOK_URL` in the environment before launching the app. Never hardcode a webhook URL into source code or distribute it inside the EXE; anyone with the URL can post to that Discord channel.
+- Reports and screenshots are also saved locally under Documents/3EN_FIGHT_Reports. The Discord message includes a summary, JSON report, and screenshot if capture succeeds.
 - Defender's own scan results remain authoritative in Windows Security.
 
 ## Build the Windows EXE
@@ -37,7 +39,7 @@ Install Python 3.12, then run:
 
 ```powershell
 python -m py_compile inspector.py
-python -m pip install --upgrade pyinstaller
+python -m pip install --upgrade pyinstaller pillow
 pyinstaller --noconfirm --clean --onefile --windowed --name 3EN_FIGHT_INSPECTOR inspector.py
 ```
 
