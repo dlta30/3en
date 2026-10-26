@@ -308,8 +308,8 @@ class Inspector:
         self.root = root
         self.results = []
         root.title(APP_NAME)
-        root.geometry("1060x760")
-        root.minsize(800, 620)
+        root.geometry("1180x820")
+        root.minsize(900, 680)
         root.configure(bg="#08090d")
         style = ttk.Style()
         try:
@@ -356,7 +356,19 @@ class Inspector:
         self.saved_label = self.stat_card(stats, "حالة التقرير", "لم يبدأ")
         panel = tk.Frame(root, bg="#11141c", highlightbackground="#34303a", highlightthickness=1)
         panel.pack(fill="both", expand=True, padx=18, pady=(2, 18))
-        tk.Label(panel, text="نتائج الفحص", fg="#f3f4f6", bg="#11141c", font=("Segoe UI", 11, "bold")).pack(anchor="w", padx=12, pady=(10, 6))
+        tk.Label(panel, text="نتائج الفحص", fg="#f3f4f6", bg="#11141c", font=("Segoe UI", 12, "bold")).pack(anchor="w", padx=12, pady=(10, 6))
+        filterbar = tk.Frame(panel, bg="#11141c")
+        filterbar.pack(fill="x", padx=12, pady=(0, 8))
+        tk.Label(filterbar, text="بحث:", fg="#aab2c2", bg="#11141c").pack(side="left", padx=(0, 6))
+        self.search_var = tk.StringVar()
+        self.search_var.trace_add("write", lambda *_: self.render_results())
+        search_entry = tk.Entry(filterbar, textvariable=self.search_var, bg="#090b10", fg="#f3f4f6", insertbackground="#fff", relief="flat", font=("Segoe UI", 10))
+        search_entry.pack(side="left", fill="x", expand=True, ipady=6, padx=(0, 10))
+        tk.Label(filterbar, text="عرض:", fg="#aab2c2", bg="#11141c").pack(side="left", padx=(0, 6))
+        self.filter_var = tk.StringVar(value="الكل")
+        self.filter_box = ttk.Combobox(filterbar, textvariable=self.filter_var, values=("الكل", "تحتاج مراجعة", "معلومات فقط"), state="readonly", width=16)
+        self.filter_box.pack(side="left")
+        self.filter_box.bind("<<ComboboxSelected>>", lambda _event: self.render_results())
         cols = ("severity", "check", "item", "detail")
         self.tree = ttk.Treeview(panel, columns=cols, show="headings")
         for col, title, width in (("severity", "النتيجة", 90), ("check", "نوع الفحص", 150), ("item", "العنصر", 240), ("detail", "التفاصيل", 480)):
@@ -442,9 +454,7 @@ class Inspector:
         self.results = report["results"]
         for row in self.tree.get_children():
             self.tree.delete(row)
-        for row in self.results:
-            sev = row.get("severity", "info")
-            self.tree.insert("", "end", values=(("مراجعة" if sev == "review" else "معلومات"), row.get("check", ""), row.get("item", ""), row.get("detail", "")), tags=(sev,))
+        self.render_results()
         self.bar.configure(value=100)
         self.pct.configure(text="100%")
         self.status.configure(text=f"اكتمل الفحص • {report['run_id']}")
@@ -453,6 +463,27 @@ class Inspector:
         self.saved_label.configure(text="تم الحفظ")
         self.btn.configure(state="normal", text="↻  إعادة الفحص")
         messagebox.showinfo("اكتمل الفحص", f"حُفظ التقرير محليًا في:\n{path}\n\nإرسال Discord: {report.get('discord_delivery', 'غير معروف')}\nصورة الشاشة: {report.get('screenshot_status', 'لم تُلتقط')}\n\nملاحظة: مؤشرات المراجعة ليست حكمًا نهائيًا.")
+
+    def render_results(self):
+        if not hasattr(self, "tree"):
+            return
+        query = self.search_var.get().strip().casefold() if hasattr(self, "search_var") else ""
+        selected = self.filter_var.get() if hasattr(self, "filter_var") else "الكل"
+        for row_id in self.tree.get_children():
+            self.tree.delete(row_id)
+        for row in getattr(self, "results", []):
+            sev = row.get("severity", "info")
+            if selected == "تحتاج مراجعة" and sev != "review":
+                continue
+            if selected == "معلومات فقط" and sev == "review":
+                continue
+            searchable = " ".join(str(row.get(key, "")) for key in ("check", "item", "detail", "severity")).casefold()
+            if query and query not in searchable:
+                continue
+            self.tree.insert("", "end", values=(("مراجعة" if sev == "review" else "معلومات"), row.get("check", ""), row.get("item", ""), row.get("detail", "")), tags=(sev,))
+        if hasattr(self, "status") and hasattr(self, "results"):
+            shown = len(self.tree.get_children())
+            self.status.configure(text=f"النتائج المعروضة: {shown} من {len(self.results)} • المؤشرات تحتاج مراجعة بشرية")
 
     def failed(self, message):
         self.status.configure(text="تعذر حفظ التقرير")
