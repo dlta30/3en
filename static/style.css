@@ -39,3 +39,15 @@ a{color:#ff8193;text-decoration:none;transition:color .2s,background .2s}a:hover
 .owner-console .owner-app{scroll-margin-top:85px}
 @media(max-width:900px){.side-nav{width:180px}.owner-console .console-main{margin-right:180px}.owner-console .container{padding:20px 16px}.side-nav{padding:18px 10px}.owner-console .stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){.side-nav{position:static;width:auto;display:flex;flex-direction:row;flex-wrap:wrap;padding:8px;border-left:0;border-bottom:1px solid #2b1c24}.side-profile,.side-footer{display:none}.nav-item{flex:1 1 auto;justify-content:center;padding:9px 7px;font-size:10px}.owner-console .console-main{margin-right:0}.owner-console .container{padding:14px 10px}.owner-console .stats{grid-template-columns:1fr}.owner-console .hero{padding:20px}.owner-console .topbar{padding:10px 12px}.owner-console .top-actions .status{display:none}}
+
+/* Fast scan dashboard polish */
+.owner-console .hero{background:radial-gradient(circle at 12% 15%,#ff294815,transparent 36%),linear-gradient(120deg,#210a12,#101116 64%,#180910);border-color:#762337}
+.owner-console .hero h1 span{color:#ff2948;text-shadow:0 0 28px #ff294822}
+.owner-console .app-download-card{transition:border-color .2s,transform .2s}
+.owner-console .app-download-card:hover{border-color:#a52a43;transform:translateY(-1px)}
+.owner-console .side-nav .nav-item{border-radius:8px;transition:background .18s,border-color .18s}
+.owner-console .side-nav .nav-item:hover,.owner-console .side-nav .nav-item.active{background:linear-gradient(90deg,#ff294818,transparent);border-color:#682133;color:#fff}
+.owner-console .table-wrap{border-color:#34212a}
+.owner-console .owner-archive .toolbar input{min-height:44px}
+.owner-console .button:focus-visible,.owner-console button:focus-visible,.owner-console a:focus-visible{outline:2px solid #ff8394;outline-offset:3px}
+@media(max-width:650px){.owner-console .hero h1{font-size:31px}.owner-console .app-download-card{gap:12px}}
