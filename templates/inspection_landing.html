@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#08080c"><title>3en lnspector Team | جلسة التفتيش</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body><header class="topbar"><a class="brand" href="/"><span class="brand-mark">3</span><span>3en <span>lnspector Team</span></span></a><span class="status neutral">INSPECTION SESSION</span></header>
+<main class="container"><section class="hero"><div class="hero-content"><span class="live-tag">INSPECTION REQUEST</span><p class="eyebrow">3EN · CONSENT FIRST</p><h1>جلسة <span>تفتيش الجهاز</span></h1><p class="muted">هذه صفحة تعريف بجلسة التفتيش. لا يتم فحص الجهاز عن بُعد تلقائيًا ولا يتم الوصول إلى ملفاتك بمجرد فتح الرابط.</p></div><div class="hero-stamp"><span>3en</span><small>INSPECTOR<br>TEAM</small></div></section>
+<section class="panel section-panel"><p class="eyebrow">SESSION DETAILS</p><h2>تفاصيل الجلسة</h2>
+{% if expired %}<p class="alert">انتهت صلاحية رابط هذه الجلسة. اطلب من فريق التفتيش إنشاء رابط جديد.</p>
+{% else %}<div class="stats"><article class="panel"><p class="stat-label">المعرّف</p><strong class="report-player">{{ inspection.player }}</strong></article><article class="panel"><p class="stat-label">الحالة</p><strong class="online" style="font-size:20px">{{ inspection.status|upper }}</strong></article><article class="panel"><p class="stat-label">تاريخ الانتهاء</p><strong style="font-size:16px">{{ inspection.expires_at.strftime('%Y-%m-%d %H:%M UTC') }}</strong></article></div>
+{% if inspection.note %}<p class="muted">ملاحظة الفريق: {{ inspection.note }}</p>{% endif %}<div class="session-preview"><strong>قبل المتابعة</strong><p>تأكد من هوية فريق التفتيش، واقرأ سياسة السيرفر. لا تشغّل ملفات غير موثوقة ولا تشارك كلمات مرورك أو ملفاتك الشخصية.</p><p class="muted small">حاليًا، هذه الصفحة تعرض تفاصيل الجلسة فقط. إرسال نتائج الفحص يحتاج إلى أداة فحص واضحة المصدر وتشغيل بموافقتك.</p></div>{% endif %}
+</section><footer>3en lnspector Team · CONSENT-BASED INSPECTION</footer></main></body></html>
