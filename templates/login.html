@@ -1,0 +1,32 @@
+```html
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>3eN Fight PRO | Login</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <main class="login-wrap">
+    <section class="panel login-panel">
+      <p class="eyebrow">SECURITY INSPECTOR · ROITH</p>
+      <h1><span>3eN</span> FIGHT PRO</h1>
+      <p class="muted">لوحة إدارة عمليات التفتيش</p>
+
+      {% for message in get_flashed_messages() %}
+        <p class="alert">{{ message }}</p>
+      {% endfor %}
+
+      <form method="post">
+        <label for="password">كلمة مرور الإدارة</label>
+        <input id="password" name="password" type="password"
+               autocomplete="current-password" required>
+        <button type="submit">دخول آمن</button>
+      </form>
+      <p class="muted small">By: ROITH</p>
+    </section>
+  </main>
+</body>
+</html>
+```
