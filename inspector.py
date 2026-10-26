@@ -14,7 +14,7 @@ from pathlib import Path
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 
-APP_NAME = "3EN FIGHT | INSPECTOR TEAM"
+APP_NAME = "3EN | INSPECTOR"
 REPORT_DIR = Path.home() / "Documents" / "3EN_FIGHT_Reports"
 SUSPICIOUS_TERMS = (
     "aimbot", "wallhack", "esp", "injector", "memory editor", "cheat engine",
@@ -63,9 +63,9 @@ def send_discord_report(report, report_path, screenshot_path):
         return False, "DISCORD_WEBHOOK_URL is not configured; report remains local."
     boundary = "----3ENFIGHT" + os.urandom(12).hex()
     payload = {
-        "username": "3EN FIGHT Inspector",
+        "username": "3EN Inspector",
         "embeds": [{
-            "title": "🛡️ 3EN FIGHT | تقرير الفحص الأمني",
+            "title": "🛡️ 3EN | تقرير الفحص الأمني",
             "description": "اكتمل الفحص. النتائج الاحتمالية ليست إثباتًا نهائيًا.",
             "color": 15158332 if report.get("review_count", 0) else 3066993,
             "fields": [
@@ -76,7 +76,7 @@ def send_discord_report(report, report_path, screenshot_path):
                 {"name": "رقم التقرير", "value": str(report.get("run_id", ""))[:100], "inline": False},
                 {"name": "وقت الفحص (UTC)", "value": str(report.get("created_at", ""))[:100], "inline": False},
             ],
-            "footer": {"text": "3EN FIGHT • by: ROITH"}
+            "footer": {"text": "3EN • by: ROITH"}
         }]
     }
     parts = []
@@ -322,9 +322,9 @@ class Inspector:
         style.map("Treeview", background=[("selected", "#59202b")])
         header = tk.Frame(root, bg="#0d0f15", highlightbackground="#51212b", highlightthickness=1)
         header.pack(fill="x", padx=18, pady=(18, 10))
-        tk.Label(header, text="3EN FIGHT", font=("Segoe UI", 28, "bold"), fg="#ff334b", bg="#0d0f15").pack(anchor="w", padx=20, pady=(14, 0))
+        tk.Label(header, text="3EN", font=("Segoe UI", 28, "bold"), fg="#ff334b", bg="#0d0f15").pack(anchor="w", padx=20, pady=(14, 0))
         tk.Label(header, text="by: ROITH", font=("Segoe UI", 10, "bold"), fg="#a6aab5", bg="#0d0f15").pack(anchor="w", padx=22, pady=(0, 10))
-        tk.Label(header, text="INSPECTOR TEAM  /  WINDOWS SECURITY & GAME-INTEGRITY REVIEW", fg="#c1c6d4", bg="#0d0f15", font=("Segoe UI", 9, "bold")).pack(anchor="w", padx=22, pady=(0, 14))
+        tk.Label(header, text="INSPECTOR  /  WINDOWS SECURITY & GAME-INTEGRITY REVIEW", fg="#c1c6d4", bg="#0d0f15", font=("Segoe UI", 9, "bold")).pack(anchor="w", padx=22, pady=(0, 14))
         tk.Label(root, text="فحص محلي بموافقتك. لا يحذف ملفات ولا يوقف عمليات ولا يرفع محتوى ملفاتك. مؤشرات الغش احتمالية وقد تنتج عنها نتائج إيجابية كاذبة.", wraplength=980, justify="left", fg="#cbd0dc", bg="#08090d").pack(anchor="w", padx=24, pady=(0, 10))
         form = tk.Frame(root, bg="#11141c", highlightbackground="#34303a", highlightthickness=1)
         form.pack(fill="x", padx=18, pady=5)
@@ -425,7 +425,7 @@ class Inspector:
         try:
             report_dir.mkdir(parents=True, exist_ok=True)
             report = {
-                "product": "3EN FIGHT INSPECTOR TEAM", "version": "1.0.0",
+                "product": "3EN INSPECTOR", "version": "1.0.0",
                 "player": player, "run_id": rid, "created_at": datetime.now(timezone.utc).isoformat(),
                 "device": platform.node(), "platform": platform.platform(),
                 "checks": ["Defender status", "processes and generic cheat indicators", "startup items", "recent temp executables and local SHA-256"] + (["Microsoft Defender Quick Scan request"] if include_defender_scan else []),
