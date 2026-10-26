@@ -10,7 +10,7 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 
 APP_NAME = "3EN FIGHT | INSPECTOR TEAM"
 REPORT_DIR = Path.home() / "Documents" / "3EN_FIGHT_Reports"
@@ -329,7 +329,8 @@ class Inspector:
             self.report_path = path
             self.root.after(0, lambda: self.finish(report, path))
         except Exception as exc:
-            self.root.after(0, lambda: self.failed(str(exc)))
+            message = str(exc)
+            self.root.after(0, lambda message=message: self.failed(message))
 
     def finish(self, report, path):
         self.results = report["results"]
@@ -363,7 +364,19 @@ class Inspector:
         if not hasattr(self, "report"):
             messagebox.showinfo("لا يوجد تقرير", "شغّل الفحص أولًا.")
             return
-        messagebox.showinfo("تم حفظ التقرير", str(self.report_path))
+        destination = filedialog.asksaveasfilename(
+            title="تصدير تقرير الفحص",
+            defaultextension=".json",
+            initialfile=self.report_path.name,
+            filetypes=[("JSON report", "*.json")]
+        )
+        if not destination:
+            return
+        try:
+            Path(destination).write_text(json.dumps(self.report, ensure_ascii=False, indent=2), encoding="utf-8")
+            messagebox.showinfo("تم التصدير", "تم تصدير التقرير إلى:\n" + destination)
+        except OSError as exc:
+            messagebox.showerror("تعذر التصدير", str(exc))
 
 
 if __name__ == "__main__":
