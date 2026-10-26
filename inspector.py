@@ -80,44 +80,52 @@ def perform_scan(progress):
 class Inspector:
     def __init__(self, root):
         self.root=root
-        root.title("3en fight | 3en lnspector Team"); root.geometry("740x550"); root.minsize(620,460); root.configure(bg="#0b0b10")
+        root.title("3EN FIGHT | Inspector Team"); root.geometry("820x660"); root.minsize(680,540); root.configure(bg="#08090d")
         style=ttk.Style()
         try: style.theme_use("clam")
         except Exception: pass
         style.configure("TProgressbar",troughcolor="#252530",background="#e34242",thickness=18)
-        tk.Label(root,text="3EN FIGHT",font=("Segoe UI",25,"bold"),fg="#ef4444",bg="#0b0b10").pack(pady=(16,0))
-        tk.Label(root,text="3en lnspector Team  •  Windows Inspection",fg="#b8b8c5",bg="#0b0b10").pack(pady=(0,12))
-        tk.Label(root,text="فحص محلي للقراءة فقط. لا يحذف ملفات أو يوقف عمليات ولا يرسل بيانات تلقائيًا.",wraplength=680,fg="#eee",bg="#0b0b10").pack(padx=20,pady=8)
+        tk.Label(root,text="3EN FIGHT",font=("Segoe UI",27,"bold"),fg="#ff243f",bg="#08090d").pack(pady=(16,0))
+        tk.Label(root,text="INSPECTOR TEAM  •  WINDOWS SECURITY REVIEW",fg="#b8b8c5",bg="#08090d",font=("Segoe UI",9,"bold")).pack(pady=(0,12))
+        tk.Label(root,text="فحص أمني محلي للقراءة فقط. لا يحذف ملفات ولا يوقف عمليات، ولا يرسل تقارير تلقائيًا.",wraplength=740,fg="#eee",bg="#08090d").pack(padx=20,pady=8)
+        form=tk.Frame(root,bg="#101117",highlightbackground="#47202a",highlightthickness=1); form.pack(fill="x",padx=24,pady=8)
+        tk.Label(form,text="اسم اللاعب / صاحب الجهاز",fg="#e5e7eb",bg="#101117",font=("Segoe UI",10,"bold")).pack(anchor="w",padx=14,pady=(12,4))
+        self.player=tk.Entry(form,bg="#090a0f",fg="#ffffff",insertbackground="#ffffff",relief="flat",font=("Segoe UI",11))
+        self.player.pack(fill="x",padx=14,pady=(0,12),ipady=8)
         self.consent=tk.BooleanVar(value=False)
         tk.Checkbutton(root,text="أوافق على فحص هذا الجهاز وأفهم أن النتائج مؤشرات للمراجعة.",variable=self.consent,bg="#0b0b10",fg="#f3f4f6",selectcolor="#20202a",activebackground="#0b0b10",activeforeground="white",wraplength=680).pack(padx=20,pady=6)
-        self.status=tk.Label(root,text="جاهز — وافق ثم اضغط بدء الفحص",fg="#b8b8c5",bg="#0b0b10"); self.status.pack(pady=(10,5))
+        self.status=tk.Label(root,text="جاهز — أدخل الاسم، وافق، ثم ابدأ الفحص",fg="#b8b8c5",bg="#08090d"); self.status.pack(pady=(10,5))
         self.bar=ttk.Progressbar(root,maximum=100,length=650); self.bar.pack(padx=20,pady=5)
         self.pct=tk.Label(root,text="0%",fg="#ef4444",bg="#0b0b10",font=("Segoe UI",11,"bold")); self.pct.pack()
         self.btn=tk.Button(root,text="بدء الفحص",command=self.start,bg="#b91c1c",fg="white",activebackground="#dc2626",relief="flat",padx=22,pady=9,font=("Segoe UI",11,"bold")); self.btn.pack(pady=10)
-        self.out=tk.Text(root,height=9,bg="#111118",fg="#e5e7eb",relief="flat",wrap="word"); self.out.pack(fill="both",expand=True,padx=20,pady=(2,14)); self.out.insert("end","سيظهر ملخص الفحص هنا.\n"); self.out.configure(state="disabled")
+        self.out=tk.Text(root,height=11,bg="#101117",fg="#e5e7eb",relief="flat",wrap="word",highlightbackground="#3b2029",highlightthickness=1); self.out.pack(fill="both",expand=True,padx=20,pady=(2,14)); self.out.insert("end","سيظهر ملخص الفحص هنا.\n"); self.out.configure(state="disabled")
     def update_progress(self,value,label):
         self.root.after(0,lambda:(self.bar.configure(value=value),self.pct.configure(text=f"{value}%"),self.status.configure(text=label)))
     def start(self):
         if not self.consent.get():
             messagebox.showwarning("الموافقة مطلوبة","وافق على الفحص قبل البدء."); return
+        player=self.player.get().strip()
+        if not player:
+            messagebox.showwarning("اسم مطلوب","اكتب اسم اللاعب أو صاحب الجهاز أولًا."); return
         self.btn.configure(state="disabled")
-        threading.Thread(target=self.worker,daemon=True).start()
-    def worker(self):
+        self.player.configure(state="disabled")
+        threading.Thread(target=self.worker,args=(player,),daemon=True).start()
+    def worker(self, player):
         rid=new_run_id(); results=perform_scan(self.update_progress)
         REPORT_DIR.mkdir(parents=True,exist_ok=True)
-        report={"product":"3en lnspector Team","brand":"3en fight","run_id":rid,
+        report={"product":"3en lnspector Team","brand":"3EN FIGHT","player":player,"run_id":rid,
                 "created_at":datetime.now(timezone.utc).isoformat(),"device":platform.node(),
                 "platform":platform.platform(),"check_order_randomized":True,"results":results,
                 "notice":"Read-only heuristic results; review manually. Not a malware verdict."}
         path=REPORT_DIR/f"3en_inspection_{rid}.json"
         path.write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding="utf-8")
         flagged=sum(1 for item in results if item.get("severity")=="review")
-        summary=f"اكتمل الفحص بنسبة 100% ✓\nمعرّف الفحص: {rid}\nالعناصر المسجلة: {len(results)}\nعناصر تحتاج مراجعة: {flagged}\n\nحُفظ التقرير محليًا في:\n{path}\n\nالعناصر للمراجعة ليست دليلًا قاطعًا على وجود برمجية ضارة."
+        summary=f"اكتمل الفحص بنسبة 100% ✓\nاسم اللاعب: {player}\nمعرّف الفحص: {rid}\nالعناصر المسجلة: {len(results)}\nعناصر تحتاج مراجعة: {flagged}\n\nحُفظ التقرير محليًا في:\n{path}\n\nالعناصر للمراجعة ليست دليلًا قاطعًا على وجود برمجية ضارة."
         self.root.after(0,lambda:self.finish(summary))
     def finish(self,summary):
         self.bar.configure(value=100); self.pct.configure(text="100%"); self.status.configure(text="اكتمل الفحص ✓")
         self.out.configure(state="normal"); self.out.delete("1.0","end"); self.out.insert("end",summary); self.out.configure(state="disabled")
-        self.btn.configure(state="normal",text="إعادة الفحص"); messagebox.showinfo("اكتمل الفحص","اكتمل الفحص وحُفظ التقرير محليًا.")
+        self.btn.configure(state="normal",text="إعادة الفحص"); self.player.configure(state="normal"); messagebox.showinfo("اكتمل الفحص","اكتمل الفحص وحُفظ التقرير محليًا.")
 
 if __name__=="__main__":
     root=tk.Tk(); Inspector(root); root.mainloop()
