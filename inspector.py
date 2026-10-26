@@ -23,6 +23,38 @@ SUSPICIOUS_TERMS = (
 SCRIPT_EXTENSIONS = {".exe", ".dll", ".bat", ".cmd", ".ps1", ".vbs", ".js", ".scr"}
 MAX_RESULTS = 1500
 DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL", "").strip()
+INSPECTOR_API_URL = os.environ.get("INSPECTOR_API_URL", "").strip()
+SCANNER_API_KEY = os.environ.get("SCANNER_API_KEY", "").strip()
+
+
+def send_render_report(report):
+    """Send a minimal, sanitized summary to the authenticated owner dashboard."""
+    if not INSPECTOR_API_URL or not SCANNER_API_KEY:
+        return "Not configured; report remains local."
+    results = []
+    for row in report.get("results", [])[:MAX_RESULTS]:
+        if not isinstance(row, dict):
+            continue
+        flagged = row.get("severity") == "review"
+        results.append({
+            "file": (str(row.get("check", "")) + " — " + str(row.get("item", "")))[:255],
+            "hits": [str(row.get("detail", "Needs review"))[:100]] if flagged else []
+        })
+    payload = {"player": str(report.get("player", "Unknown"))[:100],
+               "total_files": len(results), "results": results}
+    url = INSPECTOR_API_URL.rstrip("/")
+    if not url.endswith("/api/scan-results"):
+        url += "/api/scan-results"
+    req = urllib.request.Request(url, data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+        headers={"Content-Type": "application/json", "X-Scanner-Key": SCANNER_API_KEY}, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=20) as response:
+            data = json.loads(response.read().decode("utf-8") or "{}")
+            if 200 <= response.status < 300 and data.get("ok"):
+                return "Uploaded to owner dashboard (report ID: {}).".format(data.get("scan_id", "?"))
+            return "Dashboard returned HTTP {}.".format(response.status)
+    except Exception as exc:
+        return "Dashboard upload failed: {}".format(str(exc)[:250])
 
 
 def send_discord_report(report, report_path, screenshot_path):
@@ -395,6 +427,7 @@ class Inspector:
                     screenshot_path = None
                 report["screenshot_status"] = screenshot_status
                 path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+            report["dashboard_delivery"] = send_render_report(report)
             sent, delivery_status = send_discord_report(report, path, screenshot_path)
             report["discord_delivery"] = delivery_status
             path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
