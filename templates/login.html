@@ -1,28 +1,10 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#09090d">
-  <title>3eN Fight Scanner PRO | دخول الإدارة</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-  <main class="login-wrap">
-    <section class="panel login-panel">
-      <div class="login-logo"><span class="brand-mark">3eN</span><div><p class="eyebrow" style="margin:0 0 5px">SECURITY CONSOLE</p><div class="brand">FIGHT <span>SCANNER PRO</span></div></div></div>
-      <h1>دخول <span>آمن</span></h1>
-      <p class="muted">لوحة إدارة تقارير فحص FiveM و GTA V</p>
-      {% for message in get_flashed_messages() %}
-        <p class="alert">{{ message }}</p>
-      {% endfor %}
-      <form method="post">
-        <label for="password">كلمة مرور الإدارة</label>
-        <input id="password" name="password" type="password" autocomplete="current-password" placeholder="أدخل كلمة المرور" required autofocus>
-        <button type="submit">دخول إلى لوحة الفحص ←</button>
-      </form>
-      <footer>ENCRYPTED ADMIN ACCESS · BY ROITH</footer>
-    </section>
-  </main>
-</body>
-</html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#08080c"><title>3en lnspector Team | دخول الإدارة</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body><main class="login-wrap"><section class="panel login-panel">
+  <div class="login-logo"><span class="brand-mark">3</span><div><p class="eyebrow" style="margin:0 0 5px">SECURITY OPERATIONS</p><div class="brand">3en <span>lnspector Team</span></div></div></div>
+  <h1>مرحبًا بك في <span>مركز التفتيش</span></h1><p class="muted">سجّل الدخول للوصول إلى التقارير وأدوات مراجعة نتائج الفحص.</p>
+  {% for message in get_flashed_messages() %}<p class="alert">{{ message }}</p>{% endfor %}
+  <form method="post"><label for="password">كلمة مرور الإدارة</label><input id="password" name="password" type="password" autocomplete="current-password" placeholder="أدخل كلمة المرور" required autofocus><button type="submit">دخول آمن ←</button></form>
+  <footer>3en lnspector Team · SECURE ADMIN ACCESS</footer>
+</section></main></body></html>
