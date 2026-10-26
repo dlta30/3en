@@ -7,28 +7,28 @@
   <title>3en lnspector Team | مركز التفتيش</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body>
+<body class="owner-console">
   <header class="topbar">
-    <a class="brand" href="/"><span class="brand-mark">3</span><span>3en <span>lnspector Team</span></span></a>
+    <a class="brand" href="/"><span class="brand-mark">3</span><span>3EN <span>FIGHT</span><small>INSPECTOR TEAM</small></span></a>
     <nav class="top-actions"><span class="status"><span class="live-dot"></span> النظام متصل</span><a class="top-link" href="/logout">تسجيل الخروج ↗</a></nav>
   </header>
-  <main class="container">
+  <aside class="side-nav"><div class="side-profile"><div class="profile-emblem">3</div><div><strong>3EN FIGHT</strong><small>OWNER CONTROL</small></div></div><a class="nav-item active" href="#overview"><span>⌂</span> لوحة التحكم</a><a class="nav-item" href="#inspector-app"><span>◈</span> برنامج التفتيش EXE</a><a class="nav-item" href="#reports"><span>▤</span> أرشيف التقارير</a><div class="side-footer"><span class="live-dot"></span> لوحة المالك<br><small>3en lnspector Team</small></div></aside><main class="container console-main" id="overview">
     <section class="hero">
       <div class="hero-content">
         <span class="live-tag"><span class="live-dot"></span> INSPECTION OPERATIONS CENTER</span>
         <p class="eyebrow">3EN · INSPECTOR TEAM</p>
-        <h1>مركز <span>التفتيش والتحليل</span></h1>
+        <h1>لوحة <span>التحكم</span></h1>
         <p class="muted">منصة موحّدة لإدارة جلسات التفتيش، استقبال نتائج الفحص، ومراجعة المؤشرات الأمنية من لوحة واحدة. النتائج مؤشرات للمراجعة وليست حكمًا تلقائيًا.</p>
         <div class="hero-actions"><a class="button" href="#reports">عرض التقارير ↓</a><a class="button button-ghost" href="#inspector-app">برنامج EXE ↓</a></div>
       </div>
       <div class="hero-stamp"><span>3en</span><small>INSPECTOR<br>TEAM</small></div>
     </section>
-    <section class="stats">
+    <section class="stats owner-stats">
       <article class="panel stat-card"><div class="stat-top"><span class="stat-icon">⌁</span><span class="muted small">ALL REPORTS</span></div><p class="stat-label">إجمالي عمليات الفحص</p><strong>{{ total_scans }}</strong><span class="muted small">تقارير محفوظة</span></article>
       <article class="panel stat-card"><div class="stat-top"><span class="stat-icon danger">⚑</span><span class="muted small">NEEDS REVIEW</span></div><p class="stat-label">مؤشرات تحتاج مراجعة</p><strong class="red">{{ flagged_total }}</strong><span class="muted small">راجع التفاصيل قبل القرار</span></article>
       <article class="panel stat-card"><div class="stat-top"><span class="stat-icon safe">✓</span><span class="muted small">SERVICE STATUS</span></div><p class="stat-label">حالة لوحة الإدارة</p><strong class="online">ONLINE</strong><span class="status">الاتصال نشط</span></article>
     </section>
-    <section class="panel section-panel" id="inspector-app">
+    <section class="panel section-panel owner-app" id="inspector-app">
       <div class="section-head">
         <div><p class="eyebrow">3EN FIGHT · WINDOWS CLIENT</p><h2>برنامج التفتيش EXE</h2></div>
         <span class="status neutral">Windows 10 / 11</span>
@@ -45,7 +45,7 @@
       <div class="build-note"><strong>إذا لم يبدأ التحميل:</strong> <span class="muted">افتح صفحة البناء للتحقق من نجاح إنشاء النسخة، أو انتظر انتهاء GitHub Actions.</span> <a class="table-link" href="https://github.com/dlta30/3en/actions" target="_blank" rel="noopener">حالة البناء ←</a></div>
       <p class="muted small footnote">ملاحظة: رابط التحميل يعمل بعد نجاح عملية البناء ونشر الإصدار. نتائج البرنامج مؤشرات للمراجعة وليست حكمًا قطعيًا على وجود غش.</p>
     </section>
-    <section class="panel section-panel" id="reports">
+    <section class="panel section-panel owner-archive" id="reports">
       <div class="section-head"><div><p class="eyebrow">INSPECTION HISTORY</p><h2>تقارير التفتيش</h2></div><span class="status neutral">{{ scans|length }} تقرير ظاهر</span></div>
       <div class="toolbar"><input id="scanSearch" type="search" placeholder="ابحث باسم اللاعب أو رقم التقرير..." aria-label="البحث في التقارير"><button type="button" id="exportCsv">تصدير CSV ↓</button></div>
       <div class="table-wrap"><table id="scanTable">
