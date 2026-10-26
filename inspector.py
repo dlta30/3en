@@ -7,6 +7,8 @@ import platform
 import subprocess
 import threading
 import time
+import urllib.request
+import urllib.error
 from datetime import datetime, timezone
 from pathlib import Path
 import tkinter as tk
@@ -20,6 +22,58 @@ SUSPICIOUS_TERMS = (
 )
 SCRIPT_EXTENSIONS = {".exe", ".dll", ".bat", ".cmd", ".ps1", ".vbs", ".js", ".scr"}
 MAX_RESULTS = 1500
+DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL", "").strip()
+
+
+def send_discord_report(report, report_path, screenshot_path):
+    """Send the report and consented full-screen screenshot to a configured Discord webhook."""
+    if not DISCORD_WEBHOOK_URL:
+        return False, "DISCORD_WEBHOOK_URL is not configured; report remains local."
+    boundary = "----3ENFIGHT" + os.urandom(12).hex()
+    payload = {
+        "username": "3EN FIGHT Inspector",
+        "embeds": [{
+            "title": "🛡️ 3EN FIGHT | تقرير الفحص الأمني",
+            "description": "اكتمل الفحص. النتائج الاحتمالية ليست إثباتًا نهائيًا.",
+            "color": 15158332 if report.get("review_count", 0) else 3066993,
+            "fields": [
+                {"name": "المفتش / اللاعب", "value": str(report.get("player", "غير معروف"))[:200], "inline": True},
+                {"name": "الجهاز", "value": str(report.get("device", "غير معروف"))[:200], "inline": True},
+                {"name": "عناصر تحتاج مراجعة", "value": str(report.get("review_count", 0)), "inline": True},
+                {"name": "إجمالي النتائج", "value": str(report.get("result_count", 0)), "inline": True},
+                {"name": "رقم التقرير", "value": str(report.get("run_id", ""))[:100], "inline": False},
+                {"name": "وقت الفحص (UTC)", "value": str(report.get("created_at", ""))[:100], "inline": False},
+            ],
+            "footer": {"text": "3EN FIGHT • by: ROITH"}
+        }]
+    }
+    parts = []
+    def add_field(name, filename, content_type, data):
+        parts.append((f"--{boundary}\r\nContent-Disposition: form-data; name=\"{name}\"; filename=\"{filename}\"\r\nContent-Type: {content_type}\r\n\r\n").encode("utf-8") + data + b"\r\n")
+    parts.append((f"--{boundary}\r\nContent-Disposition: form-data; name=\"payload_json\"\r\nContent-Type: application/json\r\n\r\n").encode("utf-8") + json.dumps(payload, ensure_ascii=False).encode("utf-8") + b"\r\n")
+    add_field("files[0]", report_path.name, "application/json", report_path.read_bytes())
+    if screenshot_path and screenshot_path.exists():
+        add_field("files[1]", screenshot_path.name, "image/png", screenshot_path.read_bytes())
+    body = b"".join(parts) + f"--{boundary}--\r\n".encode("utf-8")
+    req = urllib.request.Request(DISCORD_WEBHOOK_URL, data=body, headers={"Content-Type": f"multipart/form-data; boundary={boundary}"}, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=25) as response:
+            if 200 <= response.status < 300:
+                return True, "Report and consented screenshot sent to Discord."
+            return False, f"Discord returned HTTP {response.status}."
+    except Exception as exc:
+        return False, f"Discord delivery failed: {exc}"
+
+
+def capture_full_screen(destination):
+    """Capture the entire screen only after the user explicitly opts in."""
+    try:
+        from PIL import ImageGrab
+        image = ImageGrab.grab(all_screens=True)
+        image.save(destination, format="PNG")
+        return True, "Full-screen screenshot captured after consent."
+    except Exception as exc:
+        return False, f"Screenshot capture failed: {exc}"
 
 
 def run_command(args, timeout=15):
@@ -246,7 +300,9 @@ class Inspector:
         self.player.grid(row=1, column=0, sticky="ew", padx=14, pady=(0, 12), ipady=8)
         form.columnconfigure(0, weight=1)
         self.consent = tk.BooleanVar(value=False)
-        tk.Checkbutton(form, text="أوافق على فحص هذا الجهاز محليًا وأفهم طبيعة الفحوصات.", variable=self.consent, bg="#11141c", fg="#f3f4f6", selectcolor="#252530", activebackground="#11141c", activeforeground="white").grid(row=0, column=1, rowspan=2, padx=14, pady=10)
+        tk.Checkbutton(form, text="أوافق على فحص هذا الجهاز محليًا وأفهم طبيعة الفحوصات.", variable=self.consent, bg="#11141c", fg="#f3f4f6", selectcolor="#252530", activebackground="#11141c", activeforeground="white").grid(row=0, column=1, padx=14, pady=(8, 2), sticky="w")
+        self.screenshot_consent = tk.BooleanVar(value=False)
+        tk.Checkbutton(form, text="أوافق على التقاط صورة لكامل الشاشة وإرسالها مع التقرير إلى Discord.", variable=self.screenshot_consent, bg="#11141c", fg="#ffb7bf", selectcolor="#252530", activebackground="#11141c", activeforeground="white", wraplength=360, justify="left").grid(row=1, column=1, padx=14, pady=(2, 8), sticky="w")
         controls = tk.Frame(root, bg="#08090d")
         controls.pack(fill="x", padx=18, pady=8)
         self.defender_var = tk.BooleanVar(value=False)
@@ -304,10 +360,15 @@ class Inspector:
         if not player:
             messagebox.showwarning("اسم مطلوب", "اكتب اسم اللاعب أو صاحب الجهاز أولًا.")
             return
+        if not self.screenshot_consent.get():
+            messagebox.showwarning("موافقة الصورة مطلوبة", "لإرسال صورة الشاشة مع التقرير، يجب تفعيل موافقة التقاط الشاشة وإرسالها. يمكنك إلغاء الفحص أو تعديل المشروع إذا أردت الفحص المحلي فقط.")
+            return
+        if not DISCORD_WEBHOOK_URL:
+            messagebox.showwarning("إعدادات الإرسال", "لم يتم ضبط DISCORD_WEBHOOK_URL في بيئة تشغيل البرنامج. سيُحفظ التقرير محليًا فقط حتى إعداد الرابط بشكل آمن.")
         self.btn.configure(state="disabled")
-        threading.Thread(target=self.worker, args=(player, self.defender_var.get()), daemon=True).start()
+        threading.Thread(target=self.worker, args=(player, self.defender_var.get(), self.screenshot_consent.get()), daemon=True).start()
 
-    def worker(self, player, include_defender_scan):
+    def worker(self, player, include_defender_scan, capture_screenshot):
         rid = run_id()
         results = perform_scan(self.update_progress, include_defender_scan)
         report_dir = REPORT_DIR
@@ -320,10 +381,21 @@ class Inspector:
                 "checks": ["Defender status", "processes and generic cheat indicators", "startup items", "recent temp executables and local SHA-256"] + (["Microsoft Defender Quick Scan request"] if include_defender_scan else []),
                 "result_count": len(results), "review_count": sum(1 for x in results if x.get("severity") == "review"),
                 "results": results,
-                "privacy": "Local JSON report only. No automatic upload. File contents are not collected.",
+                "privacy": "This report may be sent to the configured Discord webhook with a full-screen screenshot only after the user explicitly consents in the app. File contents are not collected.",
                 "limitations": "Heuristic indicators are not proof of cheating or malware. This tool is not a substitute for a full antivirus product."
             }
             path = report_dir / f"3EN_FIGHT_{rid}.json"
+            path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+            screenshot_path = report_dir / f"3EN_FIGHT_{rid}_screen.png" if capture_screenshot else None
+            screenshot_status = "Not requested"
+            if capture_screenshot:
+                ok, screenshot_status = capture_full_screen(screenshot_path)
+                if not ok:
+                    screenshot_path = None
+                report["screenshot_status"] = screenshot_status
+                path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+            sent, delivery_status = send_discord_report(report, path, screenshot_path)
+            report["discord_delivery"] = delivery_status
             path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
             self.report = report
             self.report_path = path
@@ -346,7 +418,7 @@ class Inspector:
         self.review_label.configure(text=str(report["review_count"]))
         self.saved_label.configure(text="تم الحفظ")
         self.btn.configure(state="normal", text="↻  إعادة الفحص")
-        messagebox.showinfo("اكتمل الفحص", f"حُفظ التقرير محليًا في:\n{path}\n\nملاحظة: مؤشرات المراجعة ليست حكمًا نهائيًا.")
+        messagebox.showinfo("اكتمل الفحص", f"حُفظ التقرير محليًا في:\n{path}\n\nإرسال Discord: {report.get('discord_delivery', 'غير معروف')}\nصورة الشاشة: {report.get('screenshot_status', 'لم تُلتقط')}\n\nملاحظة: مؤشرات المراجعة ليست حكمًا نهائيًا.")
 
     def failed(self, message):
         self.status.configure(text="تعذر حفظ التقرير")
