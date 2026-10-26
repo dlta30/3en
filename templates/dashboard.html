@@ -31,13 +31,13 @@
     <section class="panel section-panel" id="create-session">
       <div class="section-head"><div><p class="eyebrow">QUICK ACTION</p><h2>إنشاء جلسة تفتيش</h2></div><span class="status neutral">SESSION SETUP</span></div>
       <p class="muted">أنشئ جلسة وسجّل اسم اللاعب وملاحظات الفريق. هذه الواجهة لا تمنح وصولًا خفيًا إلى أجهزة الآخرين؛ يجب أن يقدّم صاحب الجهاز نتائج الفحص بموافقته.</p>
-      <form class="session-form" id="sessionForm">
+      <form class="session-form" id="sessionForm" method="post" action="/sessions">
         <div class="field"><label for="playerName">اسم اللاعب / المعرّف</label><input id="playerName" name="player" maxlength="100" placeholder="مثال: Player_01" required></div>
         <div class="field"><label for="sessionNote">ملاحظات الفريق (اختياري)</label><input id="sessionNote" name="note" maxlength="240" placeholder="سبب الفحص أو رقم الطلب"></div>
-        <button type="button" id="sessionInfo">تجهيز بيانات الجلسة</button>
+        <div class="field"><label for="sessionHours">مدة صلاحية الرابط</label><select id="sessionHours" name="hours"><option value="1">ساعة</option><option value="6">6 ساعات</option><option value="12">12 ساعة</option><option value="24" selected>24 ساعة</option><option value="48">48 ساعة</option><option value="72">72 ساعة</option></select></div><button type="submit">إنشاء رابط الجلسة +</button>
       </form>
-      <div id="sessionPreview" class="session-preview" hidden aria-live="polite"></div>
-      <p class="muted small">ملاحظة: إنشاء جلسات محفوظة وروابط مشاركة فعلية يحتاج إلى تفعيل مسار الجلسات في الخادم؛ الزر هنا لا يدّعي إنشاء جلسة قبل اتصال الخادم.</p>
+      {% for message in get_flashed_messages() %}<p class="alert">{{ message }}</p>{% endfor %}{% if request.args.get("new_session") %}<div class="session-preview"><strong>تم إنشاء رابط الجلسة</strong><p>انسخ الرابط من شريط العنوان وأضف /inspect/ متبوعًا برمز الجلسة.</p></div>{% endif %}
+      <p class="muted small">كل رابط له مدة صلاحية محددة. لا ترسل الرابط إلا للشخص المعني، ولا تستخدمه دون موافقته.</p>
     </section>
     <section class="panel section-panel" id="reports">
       <div class="section-head"><div><p class="eyebrow">INSPECTION HISTORY</p><h2>تقارير التفتيش</h2></div><span class="status neutral">{{ scans|length }} تقرير ظاهر</span></div>
