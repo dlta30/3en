@@ -323,6 +323,7 @@ class Inspector:
         header = tk.Frame(root, bg="#0d0f15", highlightbackground="#51212b", highlightthickness=1)
         header.pack(fill="x", padx=18, pady=(18, 10))
         tk.Label(header, text="3EN FIGHT", font=("Segoe UI", 28, "bold"), fg="#ff334b", bg="#0d0f15").pack(anchor="w", padx=20, pady=(14, 0))
+        tk.Label(header, text="by: ROITH", font=("Segoe UI", 10, "bold"), fg="#a6aab5", bg="#0d0f15").pack(anchor="w", padx=22, pady=(0, 10))
         tk.Label(header, text="INSPECTOR TEAM  /  WINDOWS SECURITY & GAME-INTEGRITY REVIEW", fg="#c1c6d4", bg="#0d0f15", font=("Segoe UI", 9, "bold")).pack(anchor="w", padx=22, pady=(0, 14))
         tk.Label(root, text="فحص محلي بموافقتك. لا يحذف ملفات ولا يوقف عمليات ولا يرفع محتوى ملفاتك. مؤشرات الغش احتمالية وقد تنتج عنها نتائج إيجابية كاذبة.", wraplength=980, justify="left", fg="#cbd0dc", bg="#08090d").pack(anchor="w", padx=24, pady=(0, 10))
         form = tk.Frame(root, bg="#11141c", highlightbackground="#34303a", highlightthickness=1)
