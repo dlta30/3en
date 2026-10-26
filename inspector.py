@@ -372,8 +372,10 @@ class Inspector:
         cols = ("severity", "check", "item", "detail")
         self.tree = ttk.Treeview(panel, columns=cols, show="headings")
         for col, title, width in (("severity", "النتيجة", 90), ("check", "نوع الفحص", 150), ("item", "العنصر", 240), ("detail", "التفاصيل", 480)):
-            self.tree.heading(col, text=title)
+            self.tree.heading(col, text=title, command=lambda column=col: self.sort_results(column))
             self.tree.column(col, width=width, minwidth=70, stretch=(col == "detail"))
+        self._sort_reverse = {col: False for col in cols}
+        self.tree.bind("<Double-1>", lambda _event: self.copy_selected())
         self.tree.tag_configure("review", foreground="#ff9aa6")
         self.tree.tag_configure("info", foreground="#d8deea")
         scrollbar = ttk.Scrollbar(panel, orient="vertical", command=self.tree.yview)
@@ -383,7 +385,9 @@ class Inspector:
         footer = tk.Frame(root, bg="#08090d")
         footer.pack(fill="x", padx=18, pady=(0, 12))
         tk.Button(footer, text="فتح مجلد التقارير", command=self.open_reports, bg="#252a36", fg="white", relief="flat", padx=12, pady=7).pack(side="left")
-        tk.Button(footer, text="تصدير تقرير JSON", command=self.export_report, bg="#252a36", fg="white", relief="flat", padx=12, pady=7).pack(side="left", padx=8)
+        tk.Button(footer, text="نسخ العنصر المحدد", command=self.copy_selected, bg="#252a36", fg="white", relief="flat", padx=12, pady=7).pack(side="left", padx=8)
+        tk.Button(footer, text="تصدير CSV", command=self.export_csv, bg="#252a36", fg="white", relief="flat", padx=12, pady=7).pack(side="left")
+        tk.Button(footer, text="تصدير تقرير JSON", command=self.export_report, bg="#c51f36", fg="white", relief="flat", padx=12, pady=7).pack(side="right")
 
     def stat_card(self, parent, title, value):
         card = tk.Frame(parent, bg="#11141c", highlightbackground="#34303a", highlightthickness=1)
@@ -484,6 +488,46 @@ class Inspector:
         if hasattr(self, "status") and hasattr(self, "results"):
             shown = len(self.tree.get_children())
             self.status.configure(text=f"النتائج المعروضة: {shown} من {len(self.results)} • المؤشرات تحتاج مراجعة بشرية")
+
+    def sort_results(self, column):
+        reverse = self._sort_reverse.get(column, False)
+        rows = [(self.tree.set(item_id, column), item_id) for item_id in self.tree.get_children("")]
+        rows.sort(key=lambda pair: pair[0].casefold(), reverse=reverse)
+        for index, (_value, item_id) in enumerate(rows):
+            self.tree.move(item_id, "", index)
+        self._sort_reverse[column] = not reverse
+
+    def copy_selected(self):
+        selected = self.tree.selection()
+        if not selected:
+            messagebox.showinfo("اختر نتيجة", "حدد نتيجة من الجدول أولًا.")
+            return
+        values = self.tree.item(selected[0], "values")
+        self.root.clipboard_clear()
+        self.root.clipboard_append(" | ".join(str(value) for value in values))
+        self.status.configure(text="تم نسخ تفاصيل العنصر المحدد.")
+
+    def export_csv(self):
+        if not getattr(self, "results", None):
+            messagebox.showinfo("لا توجد نتائج", "شغّل الفحص أولًا.")
+            return
+        destination = filedialog.asksaveasfilename(
+            title="تصدير نتائج الفحص CSV",
+            defaultextension=".csv",
+            initialfile="3EN_FIGHT_results.csv",
+            filetypes=[("CSV", "*.csv")]
+        )
+        if not destination:
+            return
+        try:
+            with open(destination, "w", newline="", encoding="utf-8-sig") as stream:
+                writer = csv.DictWriter(stream, fieldnames=("check", "item", "severity", "detail", "sha256"))
+                writer.writeheader()
+                for row in self.results:
+                    writer.writerow({key: row.get(key, "") for key in writer.fieldnames})
+            messagebox.showinfo("تم التصدير", "تم حفظ CSV في:\\n" + destination)
+        except OSError as exc:
+            messagebox.showerror("تعذر التصدير", str(exc))
 
     def failed(self, message):
         self.status.configure(text="تعذر حفظ التقرير")
