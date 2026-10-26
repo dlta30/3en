@@ -103,7 +103,7 @@ def logout():
 @app.get("/")
 @admin_required
 def dashboard():
-    scans = Scan.query.order_by(desc(Scan.created_at)).limit(200).all()
+    scans = Scan.query.order_by(desc(Scan.created_at)).all()
     sessions = InspectionSession.query.order_by(desc(InspectionSession.created_at)).limit(50).all()
     total_scans = Scan.query.count()
     flagged_total = db.session.query(
