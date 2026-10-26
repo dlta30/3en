@@ -19,7 +19,7 @@
         <p class="eyebrow">3EN · INSPECTOR TEAM</p>
         <h1>مركز <span>التفتيش والتحليل</span></h1>
         <p class="muted">منصة موحّدة لإدارة جلسات التفتيش، استقبال نتائج الفحص، ومراجعة المؤشرات الأمنية من لوحة واحدة. النتائج مؤشرات للمراجعة وليست حكمًا تلقائيًا.</p>
-        <div class="hero-actions"><a class="button" href="#reports">عرض التقارير ↓</a><a class="button button-ghost" href="#create-session">إنشاء جلسة تفتيش +</a></div>
+        <div class="hero-actions"><a class="button" href="#reports">عرض التقارير ↓</a><a class="button button-ghost" href="#inspector-app">برنامج EXE ↓</a></div>
       </div>
       <div class="hero-stamp"><span>3en</span><small>INSPECTOR<br>TEAM</small></div>
     </section>
@@ -28,16 +28,22 @@
       <article class="panel stat-card"><div class="stat-top"><span class="stat-icon danger">⚑</span><span class="muted small">NEEDS REVIEW</span></div><p class="stat-label">مؤشرات تحتاج مراجعة</p><strong class="red">{{ flagged_total }}</strong><span class="muted small">راجع التفاصيل قبل القرار</span></article>
       <article class="panel stat-card"><div class="stat-top"><span class="stat-icon safe">✓</span><span class="muted small">SERVICE STATUS</span></div><p class="stat-label">حالة لوحة الإدارة</p><strong class="online">ONLINE</strong><span class="status">الاتصال نشط</span></article>
     </section>
-    <section class="panel section-panel" id="create-session">
-      <div class="section-head"><div><p class="eyebrow">QUICK ACTION</p><h2>إنشاء جلسة تفتيش</h2></div><span class="status neutral">SESSION SETUP</span></div>
-      <p class="muted">أنشئ جلسة وسجّل اسم اللاعب وملاحظات الفريق. هذه الواجهة لا تمنح وصولًا خفيًا إلى أجهزة الآخرين؛ يجب أن يقدّم صاحب الجهاز نتائج الفحص بموافقته.</p>
-      <form class="session-form" id="sessionForm" method="post" action="/sessions">
-        <div class="field"><label for="playerName">اسم اللاعب / المعرّف</label><input id="playerName" name="player" maxlength="100" placeholder="مثال: Player_01" required></div>
-        <div class="field"><label for="sessionNote">ملاحظات الفريق (اختياري)</label><input id="sessionNote" name="note" maxlength="240" placeholder="سبب الفحص أو رقم الطلب"></div>
-        <div class="field"><label for="sessionHours">مدة صلاحية الرابط</label><select id="sessionHours" name="hours"><option value="1">ساعة</option><option value="6">6 ساعات</option><option value="12">12 ساعة</option><option value="24" selected>24 ساعة</option><option value="48">48 ساعة</option><option value="72">72 ساعة</option></select></div><button type="submit">إنشاء رابط الجلسة +</button>
-      </form>
-      {% for message in get_flashed_messages() %}<p class="alert">{{ message }}</p>{% endfor %}{% if request.args.get("new_session") %}<div class="session-preview"><strong>تم إنشاء رابط الجلسة</strong><p>شارك الرابط مع صاحب الجهاز بعد موافقته.</p><div class="share-row"><input id="sessionShareUrl" readonly value="{{ request.url_root }}inspect/{{ request.args.get('new_session') }}"><button type="button" id="copySessionLink">نسخ الرابط</button></div></div>{% endif %}
-      <p class="muted small">كل رابط له مدة صلاحية محددة. لا ترسل الرابط إلا للشخص المعني، ولا تستخدمه دون موافقته.</p>
+    <section class="panel section-panel" id="inspector-app">
+      <div class="section-head">
+        <div><p class="eyebrow">3EN FIGHT · WINDOWS CLIENT</p><h2>برنامج التفتيش EXE</h2></div>
+        <span class="status neutral">Windows 10 / 11</span>
+      </div>
+      <p class="muted">نزّل برنامج التفتيش على جهاز ويندوز، شغّله بموافقة صاحب الجهاز، ثم راجع التقرير المحلي الذي ينتجه. لا يتم فحص الجهاز بمجرد فتح لوحة التحكم.</p>
+      <div class="app-download-card">
+        <div class="app-download-icon">3</div>
+        <div class="app-download-copy">
+          <strong>3EN FIGHT Inspector</strong>
+          <span class="muted small">ملف تشغيل مستقل · واجهة سوداء وحمراء · شريط تقدم وتقارير محلية</span>
+        </div>
+        <a class="button" href="https://github.com/dlta30/3en/releases/latest/download/3en_fight_inspector.exe">تحميل برنامج EXE ↓</a>
+      </div>
+      <div class="build-note"><strong>إذا لم يبدأ التحميل:</strong> <span class="muted">افتح صفحة البناء للتحقق من نجاح إنشاء النسخة، أو انتظر انتهاء GitHub Actions.</span> <a class="table-link" href="https://github.com/dlta30/3en/actions" target="_blank" rel="noopener">حالة البناء ←</a></div>
+      <p class="muted small footnote">ملاحظة: رابط التحميل يعمل بعد نجاح عملية البناء ونشر الإصدار. نتائج البرنامج مؤشرات للمراجعة وليست حكمًا قطعيًا على وجود غش.</p>
     </section>
     <section class="panel section-panel" id="reports">
       <div class="section-head"><div><p class="eyebrow">INSPECTION HISTORY</p><h2>تقارير التفتيش</h2></div><span class="status neutral">{{ scans|length }} تقرير ظاهر</span></div>
