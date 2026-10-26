@@ -1,147 +1,372 @@
-import os, json, time, random, hashlib, platform, subprocess, threading
-from pathlib import Path
+import csv
+import hashlib
+import io
+import json
+import os
+import platform
+import subprocess
+import threading
+import time
 from datetime import datetime, timezone
+from pathlib import Path
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-REPORT_DIR = Path.home() / "Documents" / "3en_Inspector_Reports"
+APP_NAME = "3EN FIGHT | INSPECTOR TEAM"
+REPORT_DIR = Path.home() / "Documents" / "3EN_FIGHT_Reports"
+SUSPICIOUS_TERMS = (
+    "aimbot", "wallhack", "esp", "injector", "memory editor", "cheat engine",
+    "mapper", "spoofer", "hwid", "executor", "dll injector", "macro"
+)
+SCRIPT_EXTENSIONS = {".exe", ".dll", ".bat", ".cmd", ".ps1", ".vbs", ".js", ".scr"}
+MAX_RESULTS = 1500
 
-def new_run_id():
-    return hashlib.sha256(f"{time.time_ns()}-{random.getrandbits(128)}".encode()).hexdigest()[:16].upper()
 
-def check_defender():
+def run_command(args, timeout=15):
+    flags = getattr(subprocess, "CREATE_NO_WINDOW", 0) if os.name == "nt" else 0
+    return subprocess.run(args, capture_output=True, text=True, timeout=timeout,
+                          errors="replace", creationflags=flags, shell=False)
+
+
+def run_id():
+    return datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + os.urandom(4).hex().upper()
+
+
+def item(check, name, detail, severity="info", **extra):
+    row = {"check": check, "item": str(name)[:500], "detail": str(detail)[:1000],
+           "severity": severity}
+    row.update(extra)
+    return row
+
+
+def check_defender_status():
     if os.name != "nt":
-        return [{"check":"Defender","item":"Unavailable","detail":"Windows-only check","severity":"info"}]
+        return [item("Windows Security", "Unavailable", "This check is available on Windows only.")]
     try:
-        cmd = ["powershell.exe","-NoProfile","-NonInteractive","-Command",
-               "Get-MpComputerStatus | Select-Object AMServiceEnabled,AntivirusEnabled,RealTimeProtectionEnabled | ConvertTo-Json -Compress"]
-        p = subprocess.run(cmd, capture_output=True, text=True, timeout=12,
-                           creationflags=getattr(subprocess,"CREATE_NO_WINDOW",0))
+        p = run_command(["powershell.exe", "-NoProfile", "-NonInteractive", "-Command",
+            "Get-MpComputerStatus | Select-Object AMServiceEnabled,AntivirusEnabled,RealTimeProtectionEnabled,AntivirusSignatureLastUpdated | ConvertTo-Json -Compress"], 15)
+        if p.returncode != 0 or not p.stdout.strip():
+            return [item("Windows Security", "Status unavailable", (p.stderr or p.stdout or "Defender status could not be read.").strip(), "review")]
         data = json.loads(p.stdout.strip())
-        off = [k for k in ("AMServiceEnabled","AntivirusEnabled","RealTimeProtectionEnabled") if data.get(k) is False]
-        return [{"check":"Defender","item":"Microsoft Defender","detail":", ".join(off)+" disabled" if off else "Core protection reports enabled","severity":"review" if off else "info"}]
-    except Exception:
-        return [{"check":"Defender","item":"Status unavailable","detail":"Please verify in Windows Security","severity":"info"}]
-
-def run_defender_quick_scan():
-    """Ask Microsoft Defender to run its own quick scan; never disables protection."""
-    if os.name != "nt":
-        return [{"check":"Microsoft Defender scan","item":"Unavailable","detail":"Windows-only feature","severity":"info"}]
-    try:
-        cmd = ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", "Start-MpScan -ScanType QuickScan"]
-        p = subprocess.run(cmd, capture_output=True, text=True, timeout=900, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
-        if p.returncode == 0:
-            return [{"check":"Microsoft Defender scan","item":"Quick scan requested","detail":"Check Windows Security for the authoritative scan result.","severity":"info"}]
-        detail = (p.stderr or p.stdout or "Defender did not accept the scan request").strip()[:240]
-        return [{"check":"Microsoft Defender scan","item":"Quick scan unavailable","detail":detail,"severity":"review"}]
-    except subprocess.TimeoutExpired:
-        return [{"check":"Microsoft Defender scan","item":"Timed out","detail":"Check Windows Security for scan status.","severity":"review"}]
+        keys = ("AMServiceEnabled", "AntivirusEnabled", "RealTimeProtectionEnabled")
+        off = [k for k in keys if data.get(k) is False]
+        updated = data.get("AntivirusSignatureLastUpdated", "unknown")
+        return [item("Windows Security", "Microsoft Defender",
+                     ("Protection flags reported disabled: " + ", ".join(off) if off else "Protection flags report enabled") +
+                     "; signature last updated: " + str(updated),
+                     "review" if off else "info")]
     except Exception as exc:
-        return [{"check":"Microsoft Defender scan","item":"Could not start","detail":str(exc)[:200],"severity":"review"}]
+        return [item("Windows Security", "Status unavailable", str(exc), "review")]
 
-def check_startup():
-    results, roots = [], []
-    for env in ("APPDATA","PROGRAMDATA"):
-        value = os.environ.get(env)
-        if value: roots.append(Path(value)/"Microsoft/Windows/Start Menu/Programs/Startup")
-    for root in roots:
-        try:
-            for item in root.iterdir():
-                if item.is_file():
-                    results.append({"check":"Startup","item":str(item),"detail":"Startup-folder item; review if unfamiliar. Not proof of malware.","severity":"review"})
-        except (OSError, PermissionError): pass
-    return results
 
-def check_temp():
-    results, seen = [], set()
-    for env in ("TEMP","TMP","LOCALAPPDATA"):
-        value = os.environ.get(env)
-        if not value: continue
-        root = Path(value)/"Temp" if env == "LOCALAPPDATA" else Path(value)
-        try:
-            for item in root.iterdir():
-                if not item.is_file() or item.suffix.lower() not in (".exe",".dll",".bat",".cmd",".ps1",".vbs",".js"): continue
-                if str(item).lower() in seen: continue
-                seen.add(str(item).lower())
-                try:
-                    age = (time.time()-item.stat().st_mtime)/3600
-                    if age <= 72:
-                        results.append({"check":"Temporary files","item":str(item),"detail":f"Recent executable/script-like file ({age:.1f} hours old). Not proof of malware.","severity":"review"})
-                except OSError: pass
-        except (OSError, PermissionError): pass
-    return results[:500]
+def request_defender_scan():
+    """Starts Microsoft's own quick scan only after the user presses the explicit scan button."""
+    if os.name != "nt":
+        return [item("Microsoft Defender", "Unavailable", "Windows-only feature.")]
+    try:
+        p = run_command(["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", "Start-MpScan -ScanType QuickScan"], 900)
+        if p.returncode == 0:
+            return [item("Microsoft Defender", "Quick scan request completed",
+                         "Windows accepted the scan command. Check Windows Security for its authoritative findings.")]
+        return [item("Microsoft Defender", "Quick scan could not be started",
+                     (p.stderr or p.stdout or "No details returned").strip(), "review")]
+    except subprocess.TimeoutExpired:
+        return [item("Microsoft Defender", "Quick scan timed out",
+                     "Check Windows Security for current scan status.", "review")]
+    except Exception as exc:
+        return [item("Microsoft Defender", "Quick scan unavailable", str(exc), "review")]
+
 
 def check_processes():
-    if os.name != "nt": return []
-    try:
-        p = subprocess.run(["tasklist","/FO","CSV","/NH"],capture_output=True,text=True,timeout=15,
-                           creationflags=getattr(subprocess,"CREATE_NO_WINDOW",0))
-        return [{"check":"Processes","item":line.split(",",1)[0].strip('"'),
-                 "detail":"Observed process name; presence alone is not suspicious.","severity":"info"}
-                for line in p.stdout.splitlines() if line][:1000]
-    except Exception: return []
-
-def perform_scan(progress):
-    checks = [("حالة Windows Defender",check_defender),("فحص Microsoft Defender السريع",run_defender_quick_scan),("مجلد بدء التشغيل",check_startup),
-              ("الملفات الحديثة المؤقتة",check_temp),("العمليات الجارية",check_processes)]
-    random.SystemRandom().shuffle(checks)
+    if os.name != "nt":
+        return []
     results = []
-    for i,(label,func) in enumerate(checks,1):
-        progress(int((i-1)*100/len(checks)), "جاري الفحص: "+label)
-        try: results.extend(func())
-        except Exception as exc: results.append({"check":label,"item":"Error","detail":str(exc)[:200],"severity":"info"})
-        progress(int(i*100/len(checks)), "اكتمل: "+label)
+    try:
+        p = run_command(["powershell.exe", "-NoProfile", "-NonInteractive", "-Command",
+            "Get-CimInstance Win32_Process | Select-Object ProcessId,Name,ExecutablePath,CommandLine | ConvertTo-Json -Compress"], 30)
+        if p.returncode != 0 or not p.stdout.strip():
+            return [item("Processes", "Could not enumerate processes", p.stderr or "No data returned", "review")]
+        data = json.loads(p.stdout.strip())
+        if isinstance(data, dict):
+            data = [data]
+        for proc in data[:1000]:
+            name = proc.get("Name") or "(unknown process)"
+            path = proc.get("ExecutablePath") or "path unavailable"
+            command = proc.get("CommandLine") or ""
+            haystack = (str(name) + " " + str(path) + " " + str(command)).lower()
+            matches = [term for term in SUSPICIOUS_TERMS if term in haystack]
+            results.append(item("Processes", f"{name} (PID {proc.get('ProcessId', '?')})",
+                f"Path: {path}. " + (f"Name/path/command matched generic review terms: {', '.join(matches)}. This is a heuristic and may be a false positive." if matches else "Process observed; presence alone is not evidence of cheating or malware."),
+                "review" if matches else "info", pid=proc.get("ProcessId"), path=path))
+    except Exception as exc:
+        results.append(item("Processes", "Enumeration failed", str(exc), "review"))
     return results
+
+
+def startup_items():
+    results = []
+    roots = []
+    for env in ("APPDATA", "PROGRAMDATA"):
+        value = os.environ.get(env)
+        if value:
+            roots.append(Path(value) / "Microsoft" / "Windows" / "Start Menu" / "Programs" / "Startup")
+    for root in roots:
+        try:
+            for path in root.iterdir():
+                results.append(item("Startup", path, "Startup-folder item. Review unfamiliar entries; this alone is not proof of malware.", "review"))
+        except (OSError, PermissionError):
+            pass
+    if os.name == "nt":
+        try:
+            p = run_command(["powershell.exe", "-NoProfile", "-NonInteractive", "-Command",
+                "Get-CimInstance Win32_StartupCommand | Select-Object Name,Command,Location,User | ConvertTo-Json -Compress"], 25)
+            if p.returncode == 0 and p.stdout.strip():
+                data = json.loads(p.stdout.strip())
+                if isinstance(data, dict):
+                    data = [data]
+                for entry in data[:300]:
+                    command = entry.get("Command") or ""
+                    haystack = (str(entry.get("Name", "")) + " " + command).lower()
+                    matches = [term for term in SUSPICIOUS_TERMS if term in haystack]
+                    results.append(item("Startup", entry.get("Name", "Unnamed entry"),
+                        f"Command: {command}; Location: {entry.get('Location', 'unknown')}. " +
+                        (f"Generic review terms matched: {', '.join(matches)}." if matches else "Review publisher and path if unfamiliar."),
+                        "review" if matches else "info"))
+        except Exception as exc:
+            results.append(item("Startup", "Startup registry query unavailable", str(exc), "info"))
+    return results
+
+
+def recent_temp_executables():
+    results, seen = [], set()
+    candidates = []
+    for env in ("TEMP", "TMP"):
+        value = os.environ.get(env)
+        if value:
+            candidates.append(Path(value))
+    local = os.environ.get("LOCALAPPDATA")
+    if local:
+        candidates.append(Path(local) / "Temp")
+    cutoff = time.time() - 72 * 3600
+    for root in candidates:
+        try:
+            for path in root.iterdir():
+                key = str(path).lower()
+                if key in seen or not path.is_file() or path.suffix.lower() not in SCRIPT_EXTENSIONS:
+                    continue
+                seen.add(key)
+                try:
+                    stat = path.stat()
+                    if stat.st_mtime >= cutoff:
+                        results.append(item("Recent temporary files", path,
+                            f"Executable/script-like file modified {((time.time()-stat.st_mtime)/3600):.1f} hours ago; not proof of malware.",
+                            "review", size_bytes=stat.st_size, modified_at=datetime.fromtimestamp(stat.st_mtime, timezone.utc).isoformat()))
+                except OSError:
+                    pass
+        except (OSError, PermissionError):
+            pass
+    return results[:500]
+
+
+def hash_suspicious_candidates(results):
+    """Hash only already-listed recent temp candidates; never uploads file contents."""
+    enriched = []
+    for row in results:
+        path = row.get("item", "")
+        if row.get("check") != "Recent temporary files":
+            enriched.append(row)
+            continue
+        try:
+            digest = hashlib.sha256()
+            with open(path, "rb") as stream:
+                for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                    digest.update(chunk)
+            row["sha256"] = digest.hexdigest()
+            row["detail"] += " SHA-256 calculated locally; no file contents uploaded."
+        except (OSError, PermissionError):
+            row["detail"] += " SHA-256 unavailable (access denied or file changed)."
+        enriched.append(row)
+    return enriched
+
+
+def perform_scan(progress, include_defender_scan):
+    checks = [
+        ("حالة الحماية", check_defender_status),
+        ("العمليات الجارية ومؤشرات الغش العامة", check_processes),
+        ("عناصر بدء التشغيل", startup_items),
+        ("ملفات مؤقتة حديثة وبصماتها", recent_temp_executables),
+    ]
+    results = []
+    for idx, (label, fn) in enumerate(checks, 1):
+        progress(int((idx - 1) * 100 / (len(checks) + (1 if include_defender_scan else 0))), "جاري الفحص: " + label)
+        try:
+            found = fn()
+            if label == "ملفات مؤقتة حديثة وبصماتها":
+                found = hash_suspicious_candidates(found)
+            results.extend(found)
+        except Exception as exc:
+            results.append(item(label, "Check failed", str(exc), "review"))
+        progress(int(idx * 100 / (len(checks) + (1 if include_defender_scan else 0))), "اكتمل: " + label)
+    if include_defender_scan:
+        progress(85, "جاري طلب فحص Microsoft Defender — قد يستغرق وقتًا")
+        try:
+            results.extend(request_defender_scan())
+        except Exception as exc:
+            results.append(item("Microsoft Defender", "Scan request failed", str(exc), "review"))
+        progress(100, "اكتمل الفحص")
+    return results[:MAX_RESULTS]
+
 
 class Inspector:
     def __init__(self, root):
-        self.root=root
-        root.title("3EN FIGHT | Inspector Team"); root.geometry("820x660"); root.minsize(680,540); root.configure(bg="#08090d")
-        style=ttk.Style()
-        try: style.theme_use("clam")
-        except Exception: pass
-        style.configure("TProgressbar",troughcolor="#252530",background="#e34242",thickness=18)
-        tk.Label(root,text="3EN FIGHT",font=("Segoe UI",27,"bold"),fg="#ff243f",bg="#08090d").pack(pady=(16,0))
-        tk.Label(root,text="INSPECTOR TEAM  •  WINDOWS SECURITY REVIEW",fg="#b8b8c5",bg="#08090d",font=("Segoe UI",9,"bold")).pack(pady=(0,12))
-        tk.Label(root,text="فحص أمني محلي للقراءة فقط. لا يحذف ملفات ولا يوقف عمليات، ولا يرسل تقارير تلقائيًا.",wraplength=740,fg="#eee",bg="#08090d").pack(padx=20,pady=8)
-        form=tk.Frame(root,bg="#101117",highlightbackground="#47202a",highlightthickness=1); form.pack(fill="x",padx=24,pady=8)
-        tk.Label(form,text="اسم اللاعب / صاحب الجهاز",fg="#e5e7eb",bg="#101117",font=("Segoe UI",10,"bold")).pack(anchor="w",padx=14,pady=(12,4))
-        self.player=tk.Entry(form,bg="#090a0f",fg="#ffffff",insertbackground="#ffffff",relief="flat",font=("Segoe UI",11))
-        self.player.pack(fill="x",padx=14,pady=(0,12),ipady=8)
-        self.consent=tk.BooleanVar(value=False)
-        tk.Checkbutton(root,text="أوافق على فحص هذا الجهاز وأفهم أن النتائج مؤشرات للمراجعة.",variable=self.consent,bg="#0b0b10",fg="#f3f4f6",selectcolor="#20202a",activebackground="#0b0b10",activeforeground="white",wraplength=680).pack(padx=20,pady=6)
-        self.status=tk.Label(root,text="جاهز — أدخل الاسم، وافق، ثم ابدأ الفحص",fg="#b8b8c5",bg="#08090d"); self.status.pack(pady=(10,5))
-        self.bar=ttk.Progressbar(root,maximum=100,length=650); self.bar.pack(padx=20,pady=5)
-        self.pct=tk.Label(root,text="0%",fg="#ef4444",bg="#0b0b10",font=("Segoe UI",11,"bold")); self.pct.pack()
-        self.btn=tk.Button(root,text="بدء الفحص",command=self.start,bg="#b91c1c",fg="white",activebackground="#dc2626",relief="flat",padx=22,pady=9,font=("Segoe UI",11,"bold")); self.btn.pack(pady=10)
-        self.out=tk.Text(root,height=11,bg="#101117",fg="#e5e7eb",relief="flat",wrap="word",highlightbackground="#3b2029",highlightthickness=1); self.out.pack(fill="both",expand=True,padx=20,pady=(2,14)); self.out.insert("end","سيظهر ملخص الفحص هنا.\n"); self.out.configure(state="disabled")
-    def update_progress(self,value,label):
-        self.root.after(0,lambda:(self.bar.configure(value=value),self.pct.configure(text=f"{value}%"),self.status.configure(text=label)))
+        self.root = root
+        self.results = []
+        root.title(APP_NAME)
+        root.geometry("1060x760")
+        root.minsize(800, 620)
+        root.configure(bg="#08090d")
+        style = ttk.Style()
+        try:
+            style.theme_use("clam")
+        except Exception:
+            pass
+        style.configure("TProgressbar", troughcolor="#252530", background="#ef3348", thickness=16)
+        style.configure("Treeview", background="#11141c", fieldbackground="#11141c", foreground="#e5e7eb", rowheight=28, borderwidth=0)
+        style.configure("Treeview.Heading", background="#1b202b", foreground="#f3f4f6", font=("Segoe UI", 9, "bold"))
+        style.map("Treeview", background=[("selected", "#59202b")])
+        header = tk.Frame(root, bg="#0d0f15", highlightbackground="#51212b", highlightthickness=1)
+        header.pack(fill="x", padx=18, pady=(18, 10))
+        tk.Label(header, text="3EN FIGHT", font=("Segoe UI", 28, "bold"), fg="#ff334b", bg="#0d0f15").pack(anchor="w", padx=20, pady=(14, 0))
+        tk.Label(header, text="INSPECTOR TEAM  /  WINDOWS SECURITY & GAME-INTEGRITY REVIEW", fg="#c1c6d4", bg="#0d0f15", font=("Segoe UI", 9, "bold")).pack(anchor="w", padx=22, pady=(0, 14))
+        tk.Label(root, text="فحص محلي بموافقتك. لا يحذف ملفات ولا يوقف عمليات ولا يرفع محتوى ملفاتك. مؤشرات الغش احتمالية وقد تنتج عنها نتائج إيجابية كاذبة.", wraplength=980, justify="left", fg="#cbd0dc", bg="#08090d").pack(anchor="w", padx=24, pady=(0, 10))
+        form = tk.Frame(root, bg="#11141c", highlightbackground="#34303a", highlightthickness=1)
+        form.pack(fill="x", padx=18, pady=5)
+        tk.Label(form, text="اسم اللاعب / صاحب الجهاز", fg="#f3f4f6", bg="#11141c", font=("Segoe UI", 10, "bold")).grid(row=0, column=0, sticky="w", padx=14, pady=(12, 4))
+        self.player = tk.Entry(form, bg="#090b10", fg="#fff", insertbackground="#fff", relief="flat", font=("Segoe UI", 11))
+        self.player.grid(row=1, column=0, sticky="ew", padx=14, pady=(0, 12), ipady=8)
+        form.columnconfigure(0, weight=1)
+        self.consent = tk.BooleanVar(value=False)
+        tk.Checkbutton(form, text="أوافق على فحص هذا الجهاز محليًا وأفهم طبيعة الفحوصات.", variable=self.consent, bg="#11141c", fg="#f3f4f6", selectcolor="#252530", activebackground="#11141c", activeforeground="white").grid(row=0, column=1, rowspan=2, padx=14, pady=10)
+        controls = tk.Frame(root, bg="#08090d")
+        controls.pack(fill="x", padx=18, pady=8)
+        self.defender_var = tk.BooleanVar(value=False)
+        tk.Checkbutton(controls, text="طلب تشغيل فحص Microsoft Defender السريع (قد يستغرق وقتًا)", variable=self.defender_var, bg="#08090d", fg="#d1d5db", selectcolor="#252530", activebackground="#08090d", activeforeground="white").pack(side="left", padx=4)
+        self.btn = tk.Button(controls, text="▶  بدء الفحص", command=self.start, bg="#c51f36", fg="white", activebackground="#ef3348", activeforeground="white", relief="flat", padx=20, pady=10, font=("Segoe UI", 10, "bold"), cursor="hand2")
+        self.btn.pack(side="right", padx=4)
+        self.status = tk.Label(root, text="جاهز — وافق على الفحص ثم اضغط بدء الفحص", fg="#c1c6d4", bg="#08090d", anchor="w")
+        self.status.pack(fill="x", padx=22, pady=(5, 3))
+        progrow = tk.Frame(root, bg="#08090d")
+        progrow.pack(fill="x", padx=22)
+        self.bar = ttk.Progressbar(progrow, maximum=100)
+        self.bar.pack(side="left", fill="x", expand=True, pady=4)
+        self.pct = tk.Label(progrow, text="0%", fg="#ff465b", bg="#08090d", width=6, font=("Segoe UI", 10, "bold"))
+        self.pct.pack(side="right")
+        stats = tk.Frame(root, bg="#08090d")
+        stats.pack(fill="x", padx=18, pady=8)
+        self.total_label = self.stat_card(stats, "العناصر المسجلة", "0")
+        self.review_label = self.stat_card(stats, "تحتاج مراجعة", "0")
+        self.saved_label = self.stat_card(stats, "حالة التقرير", "لم يبدأ")
+        panel = tk.Frame(root, bg="#11141c", highlightbackground="#34303a", highlightthickness=1)
+        panel.pack(fill="both", expand=True, padx=18, pady=(2, 18))
+        tk.Label(panel, text="نتائج الفحص", fg="#f3f4f6", bg="#11141c", font=("Segoe UI", 11, "bold")).pack(anchor="w", padx=12, pady=(10, 6))
+        cols = ("severity", "check", "item", "detail")
+        self.tree = ttk.Treeview(panel, columns=cols, show="headings")
+        for col, title, width in (("severity", "النتيجة", 90), ("check", "نوع الفحص", 150), ("item", "العنصر", 240), ("detail", "التفاصيل", 480)):
+            self.tree.heading(col, text=title)
+            self.tree.column(col, width=width, minwidth=70, stretch=(col == "detail"))
+        self.tree.tag_configure("review", foreground="#ff9aa6")
+        self.tree.tag_configure("info", foreground="#d8deea")
+        scrollbar = ttk.Scrollbar(panel, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscrollcommand=scrollbar.set)
+        self.tree.pack(side="left", fill="both", expand=True, padx=(10, 0), pady=(0, 10))
+        scrollbar.pack(side="right", fill="y", padx=(0, 10), pady=(0, 10))
+        footer = tk.Frame(root, bg="#08090d")
+        footer.pack(fill="x", padx=18, pady=(0, 12))
+        tk.Button(footer, text="فتح مجلد التقارير", command=self.open_reports, bg="#252a36", fg="white", relief="flat", padx=12, pady=7).pack(side="left")
+        tk.Button(footer, text="تصدير تقرير JSON", command=self.export_report, bg="#252a36", fg="white", relief="flat", padx=12, pady=7).pack(side="left", padx=8)
+
+    def stat_card(self, parent, title, value):
+        card = tk.Frame(parent, bg="#11141c", highlightbackground="#34303a", highlightthickness=1)
+        card.pack(side="left", fill="x", expand=True, padx=4)
+        tk.Label(card, text=title, fg="#aab2c2", bg="#11141c", font=("Segoe UI", 9)).pack(anchor="w", padx=12, pady=(8, 0))
+        value_label = tk.Label(card, text=value, fg="#ff465b", bg="#11141c", font=("Segoe UI", 16, "bold"))
+        value_label.pack(anchor="w", padx=12, pady=(0, 8))
+        return value_label
+
+    def update_progress(self, value, label):
+        self.root.after(0, lambda: (self.bar.configure(value=value), self.pct.configure(text=f"{value}%"), self.status.configure(text=label)))
+
     def start(self):
         if not self.consent.get():
-            messagebox.showwarning("الموافقة مطلوبة","وافق على الفحص قبل البدء."); return
-        player=self.player.get().strip()
+            messagebox.showwarning("الموافقة مطلوبة", "وافق على الفحص قبل البدء.")
+            return
+        player = self.player.get().strip()
         if not player:
-            messagebox.showwarning("اسم مطلوب","اكتب اسم اللاعب أو صاحب الجهاز أولًا."); return
+            messagebox.showwarning("اسم مطلوب", "اكتب اسم اللاعب أو صاحب الجهاز أولًا.")
+            return
         self.btn.configure(state="disabled")
-        self.player.configure(state="disabled")
-        threading.Thread(target=self.worker,args=(player,),daemon=True).start()
-    def worker(self, player):
-        rid=new_run_id(); results=perform_scan(self.update_progress)
-        REPORT_DIR.mkdir(parents=True,exist_ok=True)
-        report={"product":"3en lnspector Team","brand":"3EN FIGHT","player":player,"run_id":rid,
-                "created_at":datetime.now(timezone.utc).isoformat(),"device":platform.node(),
-                "platform":platform.platform(),"check_order_randomized":True,"results":results,
-                "notice":"Read-only heuristic results; review manually. Not a malware verdict."}
-        path=REPORT_DIR/f"3en_inspection_{rid}.json"
-        path.write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding="utf-8")
-        flagged=sum(1 for item in results if item.get("severity")=="review")
-        summary=f"اكتمل الفحص بنسبة 100% ✓\nاسم اللاعب: {player}\nمعرّف الفحص: {rid}\nالعناصر المسجلة: {len(results)}\nعناصر تحتاج مراجعة: {flagged}\n\nحُفظ التقرير محليًا في:\n{path}\n\nالعناصر للمراجعة ليست دليلًا قاطعًا على وجود برمجية ضارة."
-        self.root.after(0,lambda:self.finish(summary))
-    def finish(self,summary):
-        self.bar.configure(value=100); self.pct.configure(text="100%"); self.status.configure(text="اكتمل الفحص ✓")
-        self.out.configure(state="normal"); self.out.delete("1.0","end"); self.out.insert("end",summary); self.out.configure(state="disabled")
-        self.btn.configure(state="normal",text="إعادة الفحص"); self.player.configure(state="normal"); messagebox.showinfo("اكتمل الفحص","اكتمل الفحص وحُفظ التقرير محليًا.")
+        threading.Thread(target=self.worker, args=(player, self.defender_var.get()), daemon=True).start()
 
-if __name__=="__main__":
-    root=tk.Tk(); Inspector(root); root.mainloop()
+    def worker(self, player, include_defender_scan):
+        rid = run_id()
+        results = perform_scan(self.update_progress, include_defender_scan)
+        report_dir = REPORT_DIR
+        try:
+            report_dir.mkdir(parents=True, exist_ok=True)
+            report = {
+                "product": "3EN FIGHT INSPECTOR TEAM", "version": "1.0.0",
+                "player": player, "run_id": rid, "created_at": datetime.now(timezone.utc).isoformat(),
+                "device": platform.node(), "platform": platform.platform(),
+                "checks": ["Defender status", "processes and generic cheat indicators", "startup items", "recent temp executables and local SHA-256"] + (["Microsoft Defender Quick Scan request"] if include_defender_scan else []),
+                "result_count": len(results), "review_count": sum(1 for x in results if x.get("severity") == "review"),
+                "results": results,
+                "privacy": "Local JSON report only. No automatic upload. File contents are not collected.",
+                "limitations": "Heuristic indicators are not proof of cheating or malware. This tool is not a substitute for a full antivirus product."
+            }
+            path = report_dir / f"3EN_FIGHT_{rid}.json"
+            path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+            self.report = report
+            self.report_path = path
+            self.root.after(0, lambda: self.finish(report, path))
+        except Exception as exc:
+            self.root.after(0, lambda: self.failed(str(exc)))
+
+    def finish(self, report, path):
+        self.results = report["results"]
+        for row in self.tree.get_children():
+            self.tree.delete(row)
+        for row in self.results:
+            sev = row.get("severity", "info")
+            self.tree.insert("", "end", values=(("مراجعة" if sev == "review" else "معلومات"), row.get("check", ""), row.get("item", ""), row.get("detail", "")), tags=(sev,))
+        self.bar.configure(value=100)
+        self.pct.configure(text="100%")
+        self.status.configure(text=f"اكتمل الفحص • {report['run_id']}")
+        self.total_label.configure(text=str(report["result_count"]))
+        self.review_label.configure(text=str(report["review_count"]))
+        self.saved_label.configure(text="تم الحفظ")
+        self.btn.configure(state="normal", text="↻  إعادة الفحص")
+        messagebox.showinfo("اكتمل الفحص", f"حُفظ التقرير محليًا في:\n{path}\n\nملاحظة: مؤشرات المراجعة ليست حكمًا نهائيًا.")
+
+    def failed(self, message):
+        self.status.configure(text="تعذر حفظ التقرير")
+        self.btn.configure(state="normal")
+        messagebox.showerror("خطأ", message)
+
+    def open_reports(self):
+        REPORT_DIR.mkdir(parents=True, exist_ok=True)
+        if os.name == "nt":
+            os.startfile(str(REPORT_DIR))
+        else:
+            messagebox.showinfo("مجلد التقارير", str(REPORT_DIR))
+
+    def export_report(self):
+        if not hasattr(self, "report"):
+            messagebox.showinfo("لا يوجد تقرير", "شغّل الفحص أولًا.")
+            return
+        messagebox.showinfo("تم حفظ التقرير", str(self.report_path))
+
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = Inspector(root)
+    root.mainloop()
