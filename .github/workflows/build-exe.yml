@@ -23,7 +23,7 @@ jobs:
       - name: Compile-check Python
         run: python -m py_compile inspector.py
       - name: Install packager
-        run: python -m pip install --upgrade pip pyinstaller
+        run: python -m pip install --upgrade pip pyinstaller pillow
       - name: Build standalone Windows EXE
         run: pyinstaller --noconfirm --clean --onefile --windowed --name 3EN_FIGHT_INSPECTOR inspector.py
       - name: Upload EXE artifact
