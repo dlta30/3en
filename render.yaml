@@ -1,7 +1,6 @@
-```yaml
 services:
   - type: web
-    name: 3en-fight
+    name: 3en-lnspector-team
     runtime: python
     plan: free
     buildCommand: pip install -r requirements.txt
@@ -16,4 +15,3 @@ services:
         generateValue: true
       - key: DATABASE_URL
         sync: false
-```
