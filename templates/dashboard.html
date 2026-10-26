@@ -1,0 +1,79 @@
+```html
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>3eN Fight PRO | Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/">3eN <span>FIGHT PRO</span></a>
+    <a href="/logout">تسجيل الخروج</a>
+  </header>
+
+  <main class="container">
+    <p class="eyebrow">INSPECTOR PANEL · ROITH</p>
+    <h1>لوحة التحكم</h1>
+    <p class="muted">مراقبة سجلات الفحص المحفوظة في قاعدة البيانات.</p>
+
+    <section class="stats">
+      <article class="panel">
+        <p class="muted">إجمالي الفحوصات</p>
+        <strong>{{ total_scans }}</strong>
+      </article>
+      <article class="panel">
+        <p class="muted">ملفات تحتاج مراجعة</p>
+        <strong>{{ flagged_total }}</strong>
+      </article>
+    </section>
+
+    <section class="panel">
+      <h2>سجل اللاعبين</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>رقم الفحص</th>
+              <th>اللاعب</th>
+              <th>تاريخ الفحص</th>
+              <th>عدد الملفات</th>
+              <th>مؤشرات للمراجعة</th>
+              <th>التفاصيل</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for scan in scans %}
+            <tr>
+              <td>#{{ scan.id }}</td>
+              <td>{{ scan.player }}</td>
+              <td>{{ scan.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+              <td>{{ scan.total_files }}</td>
+              <td>
+                {% if scan.flagged_files %}
+                  <span class="status warning">{{ scan.flagged_files }} مؤشر</span>
+                {% else %}
+                  <span class="status">لا توجد مؤشرات مطابقة</span>
+                {% endif %}
+              </td>
+              <td><a href="{{ url_for('scan_detail', scan_id=scan.id) }}">عرض</a></td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="6" class="muted">لا توجد فحوصات مسجلة حتى الآن.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p class="muted small">
+        تطابق الاسم مجرد مؤشر؛ لا يثبت وحده وجود غش أو مخالفة.
+      </p>
+    </section>
+
+    <footer>3eN Fight Scanner PRO · By: ROITH</footer>
+  </main>
+</body>
+</html>
+```
