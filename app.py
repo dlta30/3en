@@ -123,12 +123,16 @@ def receive_scan():
     payload = request.get_json(silent=True) or {}
     player = str(payload.get("player", "")).strip()[:100]
     results = payload.get("results", [])
+    reported_total = payload.get("total_files", None)
 
     if not player:
         return jsonify({"ok": False, "error": "Player name required"}), 400
 
     if not isinstance(results, list) or len(results) > 5000:
         return jsonify({"ok": False, "error": "Invalid results"}), 400
+
+    if not isinstance(reported_total, int) or reported_total < len(results) or reported_total > 1000000:
+        return jsonify({"ok": False, "error": "Valid total_files count required"}), 400
 
     safe_results = []
     flagged = 0
@@ -154,7 +158,7 @@ def receive_scan():
 
     scan = Scan(
         player=player,
-        total_files=len(safe_results),
+        total_files=reported_total,
         flagged_files=flagged,
         results=safe_results
     )
