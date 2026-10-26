@@ -1,79 +1,97 @@
-```html
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>3eN Fight PRO | Dashboard</title>
+  <meta name="theme-color" content="#09090d">
+  <title>3eN Fight Scanner PRO | ROITH</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="/">3eN <span>FIGHT PRO</span></a>
-    <a href="/logout">تسجيل الخروج</a>
+    <a class="brand" href="/"><span class="brand-mark">3eN</span><span>FIGHT <span>SCANNER PRO</span></span></a>
+    <a class="top-link" href="/logout">تسجيل الخروج ↗</a>
   </header>
-
   <main class="container">
-    <p class="eyebrow">INSPECTOR PANEL · ROITH</p>
-    <h1>لوحة التحكم</h1>
-    <p class="muted">مراقبة سجلات الفحص المحفوظة في قاعدة البيانات.</p>
-
+    <section class="hero">
+      <div class="hero-content">
+        <span class="live-tag"><span class="live-dot"></span> SECURITY INSPECTOR / ADMIN</span>
+        <p class="eyebrow">ROITH · FILE INTELLIGENCE</p>
+        <h1>لوحة <span>الفحص الأمني</span></h1>
+        <p class="muted">مركز متابعة فحوصات FiveM و GTA V. راجع الملفات المطابقة للمؤشرات، وافتح التقارير المحفوظة لكل عملية فحص.</p>
+      </div>
+    </section>
     <section class="stats">
       <article class="panel">
-        <p class="muted">إجمالي الفحوصات</p>
+        <p class="stat-label">إجمالي عمليات الفحص</p>
         <strong>{{ total_scans }}</strong>
+        <span class="muted small">تقارير مسجلة</span>
       </article>
       <article class="panel">
-        <p class="muted">ملفات تحتاج مراجعة</p>
-        <strong>{{ flagged_total }}</strong>
+        <p class="stat-label">ملفات عليها مؤشرات</p>
+        <strong class="red">{{ flagged_total }}</strong>
+        <span class="muted small">تحتاج مراجعة بشرية</span>
+      </article>
+      <article class="panel">
+        <p class="stat-label">حالة لوحة الإدارة</p>
+        <strong style="font-size:24px">ONLINE</strong>
+        <span class="status">اتصال الواجهة نشط</span>
       </article>
     </section>
-
     <section class="panel">
-      <h2>سجل اللاعبين</h2>
+      <div class="section-head">
+        <h2>سجل عمليات الفحص</h2>
+        <span class="status neutral">{{ scans|length }} تقرير ظاهر</span>
+      </div>
+      <div class="toolbar">
+        <input id="scanSearch" type="search" placeholder="ابحث باسم اللاعب أو رقم الفحص..." aria-label="البحث في سجلات الفحص">
+        <button type="button" id="exportCsv">تصدير CSV</button>
+      </div>
       <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>رقم الفحص</th>
-              <th>اللاعب</th>
-              <th>تاريخ الفحص</th>
-              <th>عدد الملفات</th>
-              <th>مؤشرات للمراجعة</th>
-              <th>التفاصيل</th>
-            </tr>
-          </thead>
+        <table id="scanTable">
+          <thead><tr><th>رقم الفحص</th><th>اللاعب</th><th>التاريخ</th><th>الملفات المفحوصة</th><th>المؤشرات</th><th>التقرير</th></tr></thead>
           <tbody>
-            {% for scan in scans %}
+          {% for scan in scans %}
             <tr>
               <td>#{{ scan.id }}</td>
               <td>{{ scan.player }}</td>
               <td>{{ scan.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
               <td>{{ scan.total_files }}</td>
-              <td>
-                {% if scan.flagged_files %}
-                  <span class="status warning">{{ scan.flagged_files }} مؤشر</span>
-                {% else %}
-                  <span class="status">لا توجد مؤشرات مطابقة</span>
-                {% endif %}
-              </td>
-              <td><a href="{{ url_for('scan_detail', scan_id=scan.id) }}">عرض</a></td>
+              <td>{% if scan.flagged_files %}<span class="status warning">{{ scan.flagged_files }} مؤشر</span>{% else %}<span class="status">لا توجد مطابقة اسمية</span>{% endif %}</td>
+              <td><a href="{{ url_for('scan_detail', scan_id=scan.id) }}">فتح التقرير ←</a></td>
             </tr>
-            {% else %}
-            <tr>
-              <td colspan="6" class="muted">لا توجد فحوصات مسجلة حتى الآن.</td>
-            </tr>
-            {% endfor %}
+          {% else %}
+            <tr><td colspan="6" class="muted">لا توجد تقارير حتى الآن. شغّل أداة الفحص على جهاز Windows لإرسال أول تقرير.</td></tr>
+          {% endfor %}
           </tbody>
         </table>
       </div>
-      <p class="muted small">
-        تطابق الاسم مجرد مؤشر؛ لا يثبت وحده وجود غش أو مخالفة.
-      </p>
+      <p class="muted small">تنبيه: تطابق اسم ملف أو بصمته مؤشر للفحص فقط، وليس دليلًا قاطعًا على وجود مخالفة. تحقّق من السياق قبل اتخاذ أي إجراء.</p>
     </section>
-
-    <footer>3eN Fight Scanner PRO · By: ROITH</footer>
+    <footer>3eN FIGHT SCANNER PRO · BY ROITH · RED TEAM INTERFACE</footer>
   </main>
+<script>
+(() => {
+  const search = document.getElementById('scanSearch');
+  const table = document.getElementById('scanTable');
+  search.addEventListener('input', () => {
+    const term = search.value.trim().toLocaleLowerCase();
+    for (const row of table.tBodies[0].rows) {
+      row.hidden = !row.innerText.toLocaleLowerCase().includes(term);
+    }
+  });
+  document.getElementById('exportCsv').addEventListener('click', () => {
+    const rows = [...table.querySelectorAll('tr')].filter(row => !row.hidden);
+    const csv = rows.map(row => [...row.cells].map(cell => '"' + cell.innerText.replace(/"/g, '""').trim() + '"').join(',')).join('\r\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = '3en-scan-reports.csv';
+    link.click();
+    URL.revokeObjectURL(url);
+  });
+})();
+</script>
 </body>
 </html>
-```
