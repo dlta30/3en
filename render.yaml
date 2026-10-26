@@ -1,0 +1,19 @@
+```yaml
+services:
+  - type: web
+    name: 3en-fight
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
+    healthCheckPath: /health
+    envVars:
+      - key: APP_SECRET
+        generateValue: true
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: SCANNER_API_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+```
