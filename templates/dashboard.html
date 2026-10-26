@@ -3,72 +3,56 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#09090d">
-  <title>3eN Fight Scanner PRO | ROITH</title>
+  <meta name="theme-color" content="#08080c">
+  <title>3en lnspector Team | مركز التفتيش</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="/"><span class="brand-mark">3eN</span><span>FIGHT <span>SCANNER PRO</span></span></a>
-    <a class="top-link" href="/logout">تسجيل الخروج ↗</a>
+    <a class="brand" href="/"><span class="brand-mark">3</span><span>3en <span>lnspector Team</span></span></a>
+    <nav class="top-actions"><span class="status"><span class="live-dot"></span> النظام متصل</span><a class="top-link" href="/logout">تسجيل الخروج ↗</a></nav>
   </header>
   <main class="container">
     <section class="hero">
       <div class="hero-content">
-        <span class="live-tag"><span class="live-dot"></span> SECURITY INSPECTOR / ADMIN</span>
-        <p class="eyebrow">ROITH · FILE INTELLIGENCE</p>
-        <h1>لوحة <span>الفحص الأمني</span></h1>
-        <p class="muted">مركز متابعة فحوصات FiveM و GTA V. راجع الملفات المطابقة للمؤشرات، وافتح التقارير المحفوظة لكل عملية فحص.</p>
+        <span class="live-tag"><span class="live-dot"></span> INSPECTION OPERATIONS CENTER</span>
+        <p class="eyebrow">3EN · INSPECTOR TEAM</p>
+        <h1>مركز <span>التفتيش والتحليل</span></h1>
+        <p class="muted">منصة موحّدة لإدارة جلسات التفتيش، استقبال نتائج الفحص، ومراجعة المؤشرات الأمنية من لوحة واحدة. النتائج مؤشرات للمراجعة وليست حكمًا تلقائيًا.</p>
+        <div class="hero-actions"><a class="button" href="#reports">عرض التقارير ↓</a><a class="button button-ghost" href="#create-session">إنشاء جلسة تفتيش +</a></div>
       </div>
+      <div class="hero-stamp"><span>3en</span><small>INSPECTOR<br>TEAM</small></div>
     </section>
     <section class="stats">
-      <article class="panel">
-        <p class="stat-label">إجمالي عمليات الفحص</p>
-        <strong>{{ total_scans }}</strong>
-        <span class="muted small">تقارير مسجلة</span>
-      </article>
-      <article class="panel">
-        <p class="stat-label">ملفات عليها مؤشرات</p>
-        <strong class="red">{{ flagged_total }}</strong>
-        <span class="muted small">تحتاج مراجعة بشرية</span>
-      </article>
-      <article class="panel">
-        <p class="stat-label">حالة لوحة الإدارة</p>
-        <strong style="font-size:24px">ONLINE</strong>
-        <span class="status">اتصال الواجهة نشط</span>
-      </article>
+      <article class="panel stat-card"><div class="stat-top"><span class="stat-icon">⌁</span><span class="muted small">ALL REPORTS</span></div><p class="stat-label">إجمالي عمليات الفحص</p><strong>{{ total_scans }}</strong><span class="muted small">تقارير محفوظة</span></article>
+      <article class="panel stat-card"><div class="stat-top"><span class="stat-icon danger">⚑</span><span class="muted small">NEEDS REVIEW</span></div><p class="stat-label">مؤشرات تحتاج مراجعة</p><strong class="red">{{ flagged_total }}</strong><span class="muted small">راجع التفاصيل قبل القرار</span></article>
+      <article class="panel stat-card"><div class="stat-top"><span class="stat-icon safe">✓</span><span class="muted small">SERVICE STATUS</span></div><p class="stat-label">حالة لوحة الإدارة</p><strong class="online">ONLINE</strong><span class="status">الاتصال نشط</span></article>
     </section>
-    <section class="panel">
-      <div class="section-head">
-        <h2>سجل عمليات الفحص</h2>
-        <span class="status neutral">{{ scans|length }} تقرير ظاهر</span>
-      </div>
-      <div class="toolbar">
-        <input id="scanSearch" type="search" placeholder="ابحث باسم اللاعب أو رقم الفحص..." aria-label="البحث في سجلات الفحص">
-        <button type="button" id="exportCsv">تصدير CSV</button>
-      </div>
-      <div class="table-wrap">
-        <table id="scanTable">
-          <thead><tr><th>رقم الفحص</th><th>اللاعب</th><th>التاريخ</th><th>الملفات المفحوصة</th><th>المؤشرات</th><th>التقرير</th></tr></thead>
-          <tbody>
-          {% for scan in scans %}
-            <tr>
-              <td>#{{ scan.id }}</td>
-              <td>{{ scan.player }}</td>
-              <td>{{ scan.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-              <td>{{ scan.total_files }}</td>
-              <td>{% if scan.flagged_files %}<span class="status warning">{{ scan.flagged_files }} مؤشر</span>{% else %}<span class="status">لا توجد مطابقة اسمية</span>{% endif %}</td>
-              <td><a href="{{ url_for('scan_detail', scan_id=scan.id) }}">فتح التقرير ←</a></td>
-            </tr>
-          {% else %}
-            <tr><td colspan="6" class="muted">لا توجد تقارير حتى الآن. شغّل أداة الفحص على جهاز Windows لإرسال أول تقرير.</td></tr>
-          {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      <p class="muted small">تنبيه: تطابق اسم ملف أو بصمته مؤشر للفحص فقط، وليس دليلًا قاطعًا على وجود مخالفة. تحقّق من السياق قبل اتخاذ أي إجراء.</p>
+    <section class="panel section-panel" id="create-session">
+      <div class="section-head"><div><p class="eyebrow">QUICK ACTION</p><h2>إنشاء جلسة تفتيش</h2></div><span class="status neutral">SESSION SETUP</span></div>
+      <p class="muted">أنشئ جلسة وسجّل اسم اللاعب وملاحظات الفريق. هذه الواجهة لا تمنح وصولًا خفيًا إلى أجهزة الآخرين؛ يجب أن يقدّم صاحب الجهاز نتائج الفحص بموافقته.</p>
+      <form class="session-form" id="sessionForm">
+        <div class="field"><label for="playerName">اسم اللاعب / المعرّف</label><input id="playerName" name="player" maxlength="100" placeholder="مثال: Player_01" required></div>
+        <div class="field"><label for="sessionNote">ملاحظات الفريق (اختياري)</label><input id="sessionNote" name="note" maxlength="240" placeholder="سبب الفحص أو رقم الطلب"></div>
+        <button type="button" id="sessionInfo">تجهيز بيانات الجلسة</button>
+      </form>
+      <div id="sessionPreview" class="session-preview" hidden aria-live="polite"></div>
+      <p class="muted small">ملاحظة: إنشاء جلسات محفوظة وروابط مشاركة فعلية يحتاج إلى تفعيل مسار الجلسات في الخادم؛ الزر هنا لا يدّعي إنشاء جلسة قبل اتصال الخادم.</p>
     </section>
-    <footer>3eN FIGHT SCANNER PRO · BY ROITH · RED TEAM INTERFACE</footer>
+    <section class="panel section-panel" id="reports">
+      <div class="section-head"><div><p class="eyebrow">INSPECTION HISTORY</p><h2>تقارير التفتيش</h2></div><span class="status neutral">{{ scans|length }} تقرير ظاهر</span></div>
+      <div class="toolbar"><input id="scanSearch" type="search" placeholder="ابحث باسم اللاعب أو رقم التقرير..." aria-label="البحث في التقارير"><button type="button" id="exportCsv">تصدير CSV ↓</button></div>
+      <div class="table-wrap"><table id="scanTable">
+        <thead><tr><th>رقم التقرير</th><th>اللاعب</th><th>التاريخ</th><th>الملفات</th><th>المؤشرات</th><th>التفاصيل</th></tr></thead>
+        <tbody>
+        {% for scan in scans %}
+          <tr><td><span class="report-id">#{{ scan.id }}</span></td><td class="player-cell">{{ scan.player }}</td><td>{{ scan.created_at.strftime('%Y-%m-%d %H:%M') }}</td><td>{{ scan.total_files }}</td><td>{% if scan.flagged_files %}<span class="status warning">{{ scan.flagged_files }} للمراجعة</span>{% else %}<span class="status">لا توجد مطابقة اسمية</span>{% endif %}</td><td><a class="table-link" href="{{ url_for('scan_detail', scan_id=scan.id) }}">فتح التقرير ←</a></td></tr>
+        {% else %}<tr><td colspan="6" class="empty-state"><span class="empty-icon">⌕</span><strong>لا توجد تقارير بعد</strong><span class="muted">ستظهر هنا التقارير بعد إرسال نتائج الفحص إلى النظام.</span></td></tr>{% endfor %}
+        </tbody>
+      </table></div>
+      <p class="muted small footnote">⚠️ تطابق اسم ملف لا يثبت وجود غش أو مخالفة. افحص السياق والمصدر والتوقيع الرقمي قبل اتخاذ أي إجراء.</p>
+    </section>
+    <footer><strong>3en lnspector Team</strong> <span>·</span> SECURITY INSPECTION CONSOLE</footer>
   </main>
 <script>
 (() => {
@@ -76,20 +60,27 @@
   const table = document.getElementById('scanTable');
   search.addEventListener('input', () => {
     const term = search.value.trim().toLocaleLowerCase();
-    for (const row of table.tBodies[0].rows) {
-      row.hidden = !row.innerText.toLocaleLowerCase().includes(term);
-    }
+    for (const row of table.tBodies[0].rows) row.hidden = !row.innerText.toLocaleLowerCase().includes(term);
   });
   document.getElementById('exportCsv').addEventListener('click', () => {
     const rows = [...table.querySelectorAll('tr')].filter(row => !row.hidden);
     const csv = rows.map(row => [...row.cells].map(cell => '"' + cell.innerText.replace(/"/g, '""').trim() + '"').join(',')).join('\r\n');
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = '3en-scan-reports.csv';
-    link.click();
-    URL.revokeObjectURL(url);
+    const link = document.createElement('a'); link.href = url; link.download = '3en-inspector-reports.csv'; link.click(); URL.revokeObjectURL(url);
+  });
+  document.getElementById('sessionInfo').addEventListener('click', () => {
+    const player = document.getElementById('playerName').value.trim();
+    const note = document.getElementById('sessionNote').value.trim();
+    const preview = document.getElementById('sessionPreview');
+    if (!player) { document.getElementById('playerName').focus(); return; }
+    preview.hidden = false;
+    preview.replaceChildren();
+    const title = document.createElement('strong'); title.textContent = 'بيانات الجلسة جاهزة للمراجعة';
+    const line = document.createElement('p'); line.textContent = 'اللاعب: ' + player;
+    const noteLine = document.createElement('p'); noteLine.textContent = 'ملاحظات: ' + (note || 'لا توجد ملاحظات');
+    const hint = document.createElement('span'); hint.className = 'muted small'; hint.textContent = 'هذه معاينة محلية فقط؛ لم يتم إنشاء جلسة أو رابط مشاركة على الخادم.';
+    preview.append(title, line, noteLine, hint);
   });
 })();
 </script>
