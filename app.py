@@ -1,6 +1,9 @@
 import os
 import hmac
 import secrets
+import json
+import urllib.request
+import urllib.error
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 
@@ -27,6 +30,7 @@ app.config["SESSION_COOKIE_SECURE"] = os.environ.get("COOKIE_SECURE", "true").lo
 
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
 SCANNER_API_KEY = os.environ.get("SCANNER_API_KEY", "")
+DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL", "").strip()
 db = SQLAlchemy(app)
 
 
@@ -195,7 +199,51 @@ def receive_scan():
                 flagged_files=flagged, results=safe_results)
     db.session.add(scan)
     db.session.commit()
-    return jsonify({"ok": True, "scan_id": scan.id}), 201
+
+    # Forward the saved inspection report from the server. Keep the webhook secret
+    # in Render environment variables; never embed it in the distributed desktop EXE.
+    webhook_status = "not configured"
+    if DISCORD_WEBHOOK_URL:
+        boundary = "----3ENFIGHT" + secrets.token_hex(12)
+        report_json = json.dumps({
+            "scan_id": scan.id,
+            "player": scan.player,
+            "created_at": scan.created_at.isoformat(),
+            "total_files": scan.total_files,
+            "flagged_files": scan.flagged_files,
+            "results": scan.results
+        }, ensure_ascii=False, indent=2).encode("utf-8")
+        discord_payload = {
+            "username": "3EN FIGHT Inspector",
+            "embeds": [{
+                "title": "🛡️ 3EN FIGHT | تقرير التفتيش",
+                "description": "تم استلام تقرير جديد من برنامج التفتيش.",
+                "color": 15158332 if scan.flagged_files else 3066993,
+                "fields": [
+                    {"name": "اللاعب", "value": scan.player[:200], "inline": True},
+                    {"name": "رقم التقرير", "value": str(scan.id), "inline": True},
+                    {"name": "إجمالي النتائج", "value": str(scan.total_files), "inline": True},
+                    {"name": "مؤشرات للمراجعة", "value": str(scan.flagged_files), "inline": True}
+                ],
+                "footer": {"text": "3EN FIGHT • INSPECTOR TEAM"}
+            }]
+        }
+        parts = [
+            (f"--{boundary}\r\nContent-Disposition: form-data; name=\"payload_json\"\r\nContent-Type: application/json\r\n\r\n".encode("utf-8")
+             + json.dumps(discord_payload, ensure_ascii=False).encode("utf-8") + b"\r\n"),
+            (f"--{boundary}\r\nContent-Disposition: form-data; name=\"files[0]\"; filename=\"3EN_FIGHT_report_{scan.id}.json\"\r\nContent-Type: application/json\r\n\r\n".encode("utf-8")
+             + report_json + b"\r\n")
+        ]
+        body = b"".join(parts) + f"--{boundary}--\r\n".encode("utf-8")
+        req = urllib.request.Request(DISCORD_WEBHOOK_URL, data=body,
+            headers={"Content-Type": f"multipart/form-data; boundary={boundary}"}, method="POST")
+        try:
+            with urllib.request.urlopen(req, timeout=12) as response:
+                webhook_status = "sent" if 200 <= response.status < 300 else "failed"
+        except Exception:
+            webhook_status = "failed"
+
+    return jsonify({"ok": True, "scan_id": scan.id, "webhook": webhook_status}), 201
 
 
 with app.app_context():
