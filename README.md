@@ -18,7 +18,8 @@ Standalone Windows inspection utility with a black/red desktop interface.
 - The tool does not terminate processes, delete files, disable security controls, hide itself, or bypass anti-cheat.
 - A separate explicit checkbox is required to consent to a full-screen screenshot being captured and sent with the report to the configured Discord webhook. Do not run this on another person's device without their informed permission.
 - Set `DISCORD_WEBHOOK_URL` in the environment before launching the app. Never hardcode a webhook URL into source code or distribute it inside the EXE; anyone with the URL can post to that Discord channel.
-- Reports and screenshots are also saved locally under Documents/3EN_FIGHT_Reports. The Discord message includes a summary, JSON report, and screenshot if capture succeeds.
+- Reports and consented screenshots are saved locally under Documents/3EN_FIGHT_Reports. The Discord message includes a summary, JSON report, and screenshot if capture succeeds. Screenshot capture is optional; a local scan does not require screenshot consent.
+- Optional Render dashboard upload uses the environment variables `INSPECTOR_API_URL` (your Render service base URL, for example `https://your-service.onrender.com`) and `SCANNER_API_KEY` (the same secret configured on Render). The desktop app appends `/api/scan-results` automatically. Keep this API key private; do not publish it or distribute a build containing a shared key.
 - Defender's own scan results remain authoritative in Windows Security.
 
 ## Build the Windows EXE
@@ -47,4 +48,4 @@ The EXE will be created in dist/3EN_FIGHT_INSPECTOR.exe.
 
 ## Consent and privacy
 
-Run this only on a device you own or have explicit permission to inspect. The user must check the consent box before a scan begins. The current desktop version keeps reports on that device and does not connect to the website/archive backend.
+Run this only on a device you own or have explicit permission to inspect. The user must check the consent box before a scan begins. The desktop version keeps a local JSON report and can optionally submit a minimized summary to the website using `INSPECTOR_API_URL` and `SCANNER_API_KEY`. The website currently stores scan summary rows, not screenshots or the full desktop JSON. Screenshot upload is only through the configured Discord webhook after explicit screenshot consent.
