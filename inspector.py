@@ -360,11 +360,12 @@ class Inspector:
         if not player:
             messagebox.showwarning("اسم مطلوب", "اكتب اسم اللاعب أو صاحب الجهاز أولًا.")
             return
-        if not self.screenshot_consent.get():
-            messagebox.showwarning("موافقة الصورة مطلوبة", "لإرسال صورة الشاشة مع التقرير، يجب تفعيل موافقة التقاط الشاشة وإرسالها. يمكنك إلغاء الفحص أو تعديل المشروع إذا أردت الفحص المحلي فقط.")
-            return
-        if not DISCORD_WEBHOOK_URL:
-            messagebox.showwarning("إعدادات الإرسال", "لم يتم ضبط DISCORD_WEBHOOK_URL في بيئة تشغيل البرنامج. سيُحفظ التقرير محليًا فقط حتى إعداد الرابط بشكل آمن.")
+        # Screenshot consent is separate from permission to run a local inspection.
+        # A user can scan locally without granting permission to capture or upload their screen.
+        if self.screenshot_consent.get() and not DISCORD_WEBHOOK_URL:
+            messagebox.showwarning("إعدادات الإرسال", "موافقة صورة الشاشة مفعّلة لكن DISCORD_WEBHOOK_URL غير مضبوط. سيُحفظ التقرير والصورة محليًا فقط.")
+        elif not DISCORD_WEBHOOK_URL:
+            messagebox.showinfo("الفحص المحلي", "لم يتم إعداد إرسال Discord. سيُحفظ التقرير محليًا على هذا الجهاز فقط.")
         self.btn.configure(state="disabled")
         threading.Thread(target=self.worker, args=(player, self.defender_var.get(), self.screenshot_consent.get()), daemon=True).start()
 
